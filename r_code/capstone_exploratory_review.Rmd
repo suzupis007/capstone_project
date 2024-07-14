@@ -13,6 +13,8 @@ $$Enviroment Build$$
 
 *Packages Load*
 ```{r package load}
+# load packages
+
 library(readr)               # load csv files
 library(readxl)              # load excel files
 library(dplyr)               # data manipulation
@@ -22,33 +24,42 @@ library(ggplot2)             # data visualization
 ```
 *Data load*
 ```{r data load}
+# load data
+
 all_sdoh_data <- read_csv("data/sdoh_data.csv")
-cdc_data <- read_csv("data/cdc_data.csv")
+#cdc_data <- read_csv("data/cdc_data.csv")        found better response data set
+all_chr_data <- read_csv("data/chr_data.csv",
+                     skip = 1)
 ```
 
 $$Data Cleaning$$
 
 *Initial data cleaning*
 ```{r cdc feature removal}
-cdc_data <- cdc_data %>% 
-  filter(Response == '65+') %>% 
-  select('LocationAbbr', 'LocationDesc', 'Data_Value', 'Number', 'WeightedNumber', 'StratificationCategory1', 'Stratification1', 'LocationID')
+# remove unused features - not using
+
+#cdc_data <- cdc_data %>% 
+#  filter(Response == '65+') %>% 
+#  select('LocationAbbr', 'LocationDesc', 'Data_Value', 'Number', 'WeightedNumber', 'StratificationCategory1', 'Stratification1', 'LocationID')
 ```
 
-```{r sdoh feature removal}
+```{r sdoh feature cleaning 1}
+# remove unwanted features, create calculated feature
+
 sdoh_data <- all_sdoh_data %>% 
-  select("YEAR", "COUNTYFIPS", "STATEFIPS", "STATE", "COUNTY", "REGION", 
+  select(#"YEAR", 
+    "COUNTYFIPS", #"STATEFIPS", 
+    "STATE", "COUNTY", "REGION", 
   #"TERRITORY", 
-  "ACS_TOT_POP_WT", #"ACS_TOT_POP_US_ABOVE1", "ACS_TOT_POP_ABOVE5", "ACS_TOT_POP_ABOVE15", "ACS_TOT_POP_ABOVE16", "ACS_TOT_POP_16_19", "ACS_TOT_POP_ABOVE25", "ACS_TOT_CIVIL_POP_ABOVE18", "ACS_TOT_CIVIL_VET_POP_ABOVE25", "ACS_TOT_OWN_CHILD_BELOW17", "ACS_TOT_WORKER_NWFH", "ACS_TOT_WORKER_HH", "ACS_TOT_CIVILIAN_LABOR", "ACS_TOT_CIVIL_EMPLOY_POP", 
-  "ACS_TOT_POP_POV", #"ACS_TOT_CIVIL_NONINST_POP_POV", "ACS_TOT_CIVIL_POP_POV", "ACS_TOT_GRANDCHILDREN_GP",
-  "ACS_TOT_HU", "ACS_TOT_HH", "ACS_AVG_HH_SIZE",# "ACS_TOT_CIVIL_NONINST_POP", "ACS_TOT_CIVIL_VET_POP", "ACS_PCT_CHILD_DISAB", "ACS_PCT_DISABLE", "ACS_PCT_NONVET_DISABLE_18_64", "ACS_PCT_VET_DISABLE_18_64", 
+  "ACS_TOT_POP_WT", #"ACS_TOT_POP_US_ABOVE1", "ACS_TOT_POP_ABOVE5", "ACS_TOT_POP_ABOVE15", "ACS_TOT_POP_ABOVE16", "ACS_TOT_POP_16_19", "ACS_TOT_POP_ABOVE25", "ACS_TOT_CIVIL_POP_ABOVE18", "ACS_TOT_CIVIL_VET_POP_ABOVE25", "ACS_TOT_OWN_CHILD_BELOW17", "ACS_TOT_WORKER_NWFH", "ACS_TOT_WORKER_HH", "ACS_TOT_CIVILIAN_LABOR", "ACS_TOT_CIVIL_EMPLOY_POP", "ACS_TOT_POP_POV", "ACS_TOT_CIVIL_NONINST_POP_POV", "ACS_TOT_CIVIL_POP_POV", "ACS_TOT_GRANDCHILDREN_GP", "ACS_TOT_HU", "ACS_TOT_HH", 
+  "ACS_AVG_HH_SIZE",# "ACS_TOT_CIVIL_NONINST_POP", "ACS_TOT_CIVIL_VET_POP", "ACS_PCT_CHILD_DISAB", "ACS_PCT_DISABLE", "ACS_PCT_NONVET_DISABLE_18_64", "ACS_PCT_VET_DISABLE_18_64", 
   "ACS_PCT_MALE", "ACS_PCT_FEMALE", #"ACS_PCT_CTZ_US_BORN", "ACS_PCT_CTZ_NONUS_BORN", "ACS_PCT_FOREIGN_BORN",
   "ACS_PCT_NON_CITIZEN", "ACS_PCT_CTZ_NATURALIZED", "ACS_PCT_CTZ_ABOVE18", #"ACS_PCT_NONCTN_1990", "ACS_PCT_NONCTN_1999", "ACS_PCT_NONCTN_2000", "ACS_PCT_NONCTN_2010", "ACS_PCT_API_LANG", 
   "ACS_PCT_ENGL_NOT_ALL", #"ACS_PCT_ENGL_NOT_WELL", "ACS_PCT_ENGL_VERY_WELL", "ACS_PCT_ENGL_WELL", "ACS_PCT_ENGLISH", "ACS_PCT_HH_LIMIT_ENGLISH", "ACS_PCT_OTH_EURP", "ACS_PCT_OTH_LANG", "ACS_PCT_SPANISH", "ACS_PCT_VET", "ACS_PCT_GULFWAR_1990_2001", "ACS_PCT_GULFWAR_2001", "ACS_PCT_GULFWAR_VIETNAM", "ACS_PCT_VIETNAM", "ACS_MEDIAN_AGE", "ACS_MEDIAN_AGE_MALE", "ACS_MEDIAN_AGE_FEMALE", "ACS_PCT_AGE_0_4", "ACS_PCT_AGE_5_9", "ACS_PCT_AGE_10_14", "ACS_PCT_AGE_15_17", "ACS_PCT_AGE_0_17", "ACS_PCT_AGE_18_29", "ACS_PCT_AGE_18_44", "ACS_PCT_AGE_30_44", "ACS_PCT_AGE_45_64", "ACS_PCT_AGE_50_64", "ACS_PCT_AGE_ABOVE65", "ACS_PCT_AGE_ABOVE80", 
   "ACS_PCT_AIAN", #"ACS_PCT_AIAN_FEMALE", "ACS_PCT_AIAN_NONHISP", 
   "ACS_PCT_ASIAN", #"ACS_PCT_ASIAN_FEMALE", "ACS_PCT_ASIAN_MALE", "ACS_PCT_ASIAN_NONHISP", 
   "ACS_PCT_BLACK", #"ACS_PCT_BLACK_FEMALE", "ACS_PCT_BLACK_MALE", "ACS_PCT_BLACK_NONHISP", #"ACS_PCT_HISP_FEMALE", "ACS_PCT_HISP_MALE",
-  "ACS_PCT_HISPANIC", "ACS_PCT_MULT_RACE", #"ACS_PCT_MULT_RACE_FEMALE", "ACS_PCT_MULT_RACE_MALE", "ACS_PCT_MULT_RACE_NONHISP", "ACS_PCT_NHPI", "ACS_PCT_NHPI_FEMALE", "ACS_PCT_NHPI_MALE", "ACS_PCT_NHPI_NONHISP", "ACS_PCT_OTHER_FEMALE", "ACS_PCT_OTHER_MALE", "ACS_PCT_OTHER_NONHISP", 
+  "ACS_PCT_HISPANIC", #"ACS_PCT_MULT_RACE", "ACS_PCT_MULT_RACE_FEMALE", "ACS_PCT_MULT_RACE_MALE", "ACS_PCT_MULT_RACE_NONHISP", "ACS_PCT_NHPI", "ACS_PCT_NHPI_FEMALE", "ACS_PCT_NHPI_MALE", "ACS_PCT_NHPI_NONHISP", "ACS_PCT_OTHER_FEMALE", "ACS_PCT_OTHER_MALE", "ACS_PCT_OTHER_NONHISP", 
   "ACS_PCT_OTHER_RACE", "ACS_PCT_WHITE", #"ACS_PCT_WHITE_FEMALE", "ACS_PCT_WHITE_MALE", "ACS_PCT_WHITE_NONHISP", "ACS_PCT_HOUSEHOLDER_WHITE", "ACS_PCT_HOUSEHOLDER_BLACK", "ACS_PCT_HOUSEHOLDER_AIAN", "ACS_PCT_HOUSEHOLDER_ASIAN", "ACS_PCT_HOUSEHOLDER_NHPI", "ACS_PCT_HOUSEHOLDER_OTHER", "ACS_PCT_HOUSEHOLDER_MULT", "ACS_PCT_AIAN_COMB", "ACS_PCT_ASIAN_COMB", "ACS_PCT_BLACK_COMB", "ACS_PCT_NHPI_COMB", "ACS_PCT_WHITE_COMB", 
   "ACS_PCT_CHILD_1FAM", "ACS_PCT_CHILDREN_GRANDPARENT", "ACS_PCT_GRANDP_RESPS_NO_P", "ACS_PCT_GRANDP_RESPS_P", #"ACS_PCT_GRANDP_NO_RESPS", "ACS_PCT_HH_KID_1PRNT", 
   "ACS_PCT_HH_NO_COMP_DEV", "ACS_PCT_HH_SMARTPHONE", #"ACS_PCT_HH_SMARTPHONE_ONLY", 
@@ -60,7 +71,7 @@ sdoh_data <- all_sdoh_data %>%
   "ACS_PCT_HH_NO_INTERNET", "ACS_PCT_HH_SAT_INTERNET", "ACS_PCT_HH_DIAL_INTERNET_ONLY", #"ACS_PCT_DIVORCED_F", "ACS_PCT_DIVORCED_M", "ACS_PCT_MARRIED_SP_AB_F", "ACS_PCT_MARRIED_SP_AB_M", "ACS_PCT_MARRIED_SP_PR_F", "ACS_PCT_MARRIED_SP_PR_M", "ACS_PCT_NVR_MARRIED_F", "ACS_PCT_NVR_MARRIED_M", "ACS_PCT_WIDOWED_F", "ACS_PCT_WIDOWED_M", "ACS_PCT_POP_SAME_SEX_UNMRD_P", "ACS_PCT_POP_SAME_SEX_SPOUSE", 
   "ACS_PCT_ADMIN", "ACS_PCT_ART", "ACS_PCT_CONSTRUCT", "ACS_PCT_EDUC", "ACS_PCT_FINANCE", "ACS_PCT_GOVT", "ACS_PCT_INFORM", "ACS_PCT_MANUFACT", "ACS_PCT_NATURE", "ACS_PCT_OTHER", "ACS_PCT_PROFESS", "ACS_PCT_PVT_NONPROFIT", #"ACS_PCT_PVT_PROFIT", 
   "ACS_PCT_RETAIL", "ACS_PCT_TRANSPORT", "ACS_PCT_WHOLESALE", #"ACS_PCT_WORK_RES_F", "ACS_PCT_WORK_RES_M", 
-  "ACS_PCT_EMPLOYED", "ACS_PCT_UNEMPLOY", "ACS_PCT_NOT_LABOR", #"ACS_PCT_VET_UNEMPL_18_64", "ACS_PCT_VET_LABOR_FORCE_18_64", "ACS_PCT_ARMED_FORCES", 
+  "ACS_PCT_EMPLOYED", "ACS_PCT_UNEMPLOY", #"ACS_PCT_NOT_LABOR", "ACS_PCT_VET_UNEMPL_18_64", "ACS_PCT_VET_LABOR_FORCE_18_64", "ACS_PCT_ARMED_FORCES", 
   "ACS_GINI_INDEX", #"ACS_MDN_GRNDPRNT_NO_PRNT_INC", "ACS_MDN_GRNDPRNT_INC", "ACS_MEDIAN_HH_INC_AIAN", "ACS_MEDIAN_HH_INC_ASIAN" , "ACS_MEDIAN_HH_INC_BLACK", "ACS_MEDIAN_HH_INC_HISP", "ACS_MEDIAN_HH_INC_MULTI", "ACS_MEDIAN_HH_INC_NHPI", "ACS_MEDIAN_HH_INC_OTHER", "ACS_MEDIAN_HH_INC_WHITE", "ACS_MEDIAN_HH_INC", "ACS_MEDIAN_INC_F", "ACS_MEDIAN_INC_M", "ACS_MEDIAN_NONVET_INC", "ACS_MEDIAN_VET_INC", "ACS_PCT_INC50_ABOVE65", "ACS_PCT_INC50_BELOW17", "ACS_PCT_HEALTH_INC_BELOW137", "ACS_PCT_HEALTH_INC_138_199", "ACS_PCT_HEALTH_INC_200_399", "ACS_PCT_HEALTH_INC_ABOVE400", 
   "ACS_PCT_HH_INC_10000", "ACS_PCT_HH_INC_100000", "ACS_PCT_HH_INC_14999", "ACS_PCT_HH_INC_24999", "ACS_PCT_HH_INC_49999", "ACS_PCT_HH_INC_99999", #"ACS_PCT_INC50", "ACS_PCT_NONVET_POV_18_64", "ACS_PCT_VET_POV_18_64", "ACS_PCT_PERSON_INC_100_124", "ACS_PCT_PERSON_INC_125_199", "ACS_PCT_PERSON_INC_ABOVE200", "ACS_PCT_PERSON_INC_BELOW99", 
   "ACS_PER_CAPITA_INC", #"ACS_PCT_POV_AIAN", "ACS_PCT_POV_ASIAN", "ACS_PCT_POV_BLACK", "ACS_PCT_POV_HISPANIC", "ACS_PCT_POV_MULTI", "ACS_PCT_POV_NHPI", "ACS_PCT_POV_OTHER", "ACS_PCT_POV_WHITE", "ACS_PCT_HH_1FAM_FOOD_STMP", "ACS_PCT_HH_FOOD_STMP", "ACS_PCT_HH_PUB_ASSIST", "ACS_PCT_HH_FOOD_STMP_BLW_POV", "ACS_PCT_HH_NO_FD_STMP_BLW_POV", "ACS_PCT_COLLEGE_ASSOCIATE_DGR", "ACS_PCT_BACHELOR_DGR", "ACS_PCT_NO_WORK_NO_SCHL_16_19", "ACS_PCT_GRADUATE_DGR", "ACS_PCT_HS_GRADUATE", "ACS_PCT_LT_HS", "ACS_PCT_POSTHS_ED", "ACS_PCT_VET_BACHELOR", "ACS_PCT_VET_COLLEGE", "ACS_PCT_VET_HS", 
@@ -73,10 +84,10 @@ sdoh_data <- all_sdoh_data %>%
   "AHRF_ADV_NURSES_RATE", #"AHRF_TOT_CLIN_NURSE_SPEC", 
   "AHRF_CLIN_NURSE_SPEC_RATE", #"AHRF_TOT_DENTISTS", 
   "AHRF_DENTISTS_RATE", #"AHRF_TOT_NURSE_ANESTH", 
-  "AHRF_NURSE_ANESTH_RATE", "AHRF_TOT_NURSE_MIDWIVES", 
-  "AHRF_NURSE_MIDWIVES_RATE", "AHRF_TOT_NURSE_PRACT", 
-  "AHRF_NURSE_PRACT_RATE", "AHRF_TOT_PHYSICIAN_ASSIST", 
-  "AHRF_PHYSICIAN_ASSIST_RATE", "AMFAR_SSP", 
+  "AHRF_NURSE_ANESTH_RATE", #"AHRF_TOT_NURSE_MIDWIVES", 
+  "AHRF_NURSE_MIDWIVES_RATE", #"AHRF_TOT_NURSE_PRACT", 
+  "AHRF_NURSE_PRACT_RATE", #"AHRF_TOT_PHYSICIAN_ASSIST", 
+  "AHRF_PHYSICIAN_ASSIST_RATE", #"AMFAR_SSP", 
   "AMFAR_SSP_RATE", #"AMFAR_TOT_MEDSAFAC",
   "AMFAR_MEDSAFAC_RATE", #"AMFAR_TOT_AMATFAC", "AMFAR_AMATFAC_RATE", "AMFAR_TOT_HCVTFAC", "AMFAR_HCVTFAC_RATE", "AMFAR_TOT_HIVHCVTFAC", "AMFAR_HIVHCVTFAC_RATE", "AMFAR_TOT_HIVTFAC", "AMFAR_HIVTFAC_RATE", "AMFAR_TOT_MEDAMATFAC", "AMFAR_MEDAMATFAC_RATE", "AMFAR_TOT_MEDHCVTFAC", "AMFAR_MEDHCVTFAC_RATE", "AMFAR_TOT_MEDHIVHCVTFAC", "AMFAR_MEDHIVHCVTFAC_RATE", "AMFAR_TOT_MEDHIVTFAC", "AMFAR_MEDHIVTFAC_RATE", "AMFAR_TOT_MEDMHFAC", "AMFAR_MEDMHFAC_RATE", "AMFAR_TOT_MHFAC", 
   "AMFAR_MHFAC_RATE", #"CAF_ADJ_COUNTY_1", "CAF_ADJ_COUNTY_2", "CAF_ADJ_COUNTY_3", "CAF_ADJ_COUNTY_4", "CAF_ADJ_COUNTY_5", "CAF_ADJ_COUNTY_6", "CAF_ADJ_COUNTY_7", "CAF_ADJ_COUNTY_8", "CAF_ADJ_COUNTY_9", "CAF_ADJ_COUNTY_10", "CAF_ADJ_COUNTY_11", "CAF_ADJ_COUNTY_12", "CAF_ADJ_COUNTY_13", "CAF_ADJ_COUNTY_14","CDCW_TOT_POPULATION", "CDCW_INJURY_DTH_RATE", "CDCW_TRANSPORT_DTH_RATE", "CDCW_SELFHARM_DTH_RATE", "CDCW_ASSAULT_DTH_RATE", "CDCW_MATERNAL_DTH_RATE", "CDCW_OPIOID_DTH_RATE", "CDCW_DRUG_DTH_RATE", 
@@ -99,29 +110,19 @@ sdoh_data <- all_sdoh_data %>%
   "POS_MEDIAN_DIST_PED_ICU", #"POS_MEAN_DIST_PED_ICU", "POS_MIN_DIST_PED_ICU", "POS_MAX_DIST_PED_ICU", 
   "POS_MEDIAN_DIST_OBSTETRICS", #"POS_MEAN_DIST_OBSTETRICS", "POS_MIN_DIST_OBSTETRICS", "POS_MAX_DIST_OBSTETRICS", 
   "POS_MEDIAN_DIST_CLINIC", #"POS_MEAN_DIST_CLINIC", "POS_MIN_DIST_CLINIC", "POS_MAX_DIST_CLINIC", 
-  "POS_MEDIAN_DIST_ALC", #"POS_MEAN_DIST_ALC", "POS_MIN_DIST_ALC", "POS_MAX_DIST_ALC", "POS_TOT_FQHC", 
-  "POS_FQHC_RATE", #"POS_TOT_CMHC", "POS_CMHC_RATE", "POS_TOT_RHC", "POS_RHC_RATE", "POS_TOT_HHA", "POS_HHA_RATE", "POS_TOT_HOSPICE", "POS_HOSPICE_RATE", "POS_TOT_ASC", "POS_ASC_RATE", "POS_TOT_NF", "POS_NF_RATE", "POS_TOT_NF_BEDS", "POS_NF_BEDS_RATE", "POS_TOT_SNF", "POS_SNF_RATE", "POS_TOT_SNF_BEDS",  "POS_SNF_BEDS_RATE", "POS_TOT_HOSP_OBSTETRIC", "POS_HOSP_OBSTETRIC_RATE", "POS_TOT_HOSP_PED_ICU", "POS_HOSP_PED_ICU_RATE", "POS_TOT_HOSP_BURN", "POS_HOSP_BURN_RATE", "POS_TOT_HOSP_MEDSURG_ICU", "POS_HOSP_MEDSURG_ICU_RATE", "POS_TOT_HOSP_REHAB", "POS_HOSP_REHAB_RATE", "POS_TOT_HOSP_ALC", "POS_HOSP_ALC_RATE", "POS_TOT_HOSP_PSYCH", "POS_HOSP_PSYCH_RATE", "POS_TOT_HOSP_AMBULANCE", "POS_HOSP_AMBULANCE_RATE", "POS_TOT_HOSP_CHEMO", "POS_HOSP_CHEMO_RATE", "POS_TOT_HOSP_ED", "POS_HOSP_ED_RATE", "POS_PCT_HOSP_FOR_PROFIT", "POS_PCT_HOSP_NON_PROFIT", "POS_PCT_HOSP_GOV", "CEN_AIAN_NH_IND"
-  )
-```
-
-```{r sdoh calculate grandparents raising children}
-sdoh_data <- sdoh_data %>% 
+  "POS_MEDIAN_DIST_ALC", #"POS_MEAN_DIST_ALC", "POS_MIN_DIST_ALC", "POS_MAX_DIST_ALC", "POS_TOT_FQHC", "POS_FQHC_RATE", "POS_TOT_CMHC", "POS_CMHC_RATE", "POS_TOT_RHC", "POS_RHC_RATE", "POS_TOT_HHA", "POS_HHA_RATE", "POS_TOT_HOSPICE", "POS_HOSPICE_RATE", "POS_TOT_ASC", "POS_ASC_RATE", "POS_TOT_NF", "POS_NF_RATE", "POS_TOT_NF_BEDS", "POS_NF_BEDS_RATE", "POS_TOT_SNF", "POS_SNF_RATE", "POS_TOT_SNF_BEDS",  "POS_SNF_BEDS_RATE", "POS_TOT_HOSP_OBSTETRIC", "POS_HOSP_OBSTETRIC_RATE", "POS_TOT_HOSP_PED_ICU", "POS_HOSP_PED_ICU_RATE", "POS_TOT_HOSP_BURN", "POS_HOSP_BURN_RATE", "POS_TOT_HOSP_MEDSURG_ICU", "POS_HOSP_MEDSURG_ICU_RATE", "POS_TOT_HOSP_REHAB", "POS_HOSP_REHAB_RATE", "POS_TOT_HOSP_ALC", "POS_HOSP_ALC_RATE", "POS_TOT_HOSP_PSYCH", "POS_HOSP_PSYCH_RATE", "POS_TOT_HOSP_AMBULANCE", "POS_HOSP_AMBULANCE_RATE", "POS_TOT_HOSP_CHEMO", "POS_HOSP_CHEMO_RATE", "POS_TOT_HOSP_ED", "POS_HOSP_ED_RATE", "POS_PCT_HOSP_FOR_PROFIT", "POS_PCT_HOSP_NON_PROFIT", "POS_PCT_HOSP_GOV", "CEN_AIAN_NH_IND"
+  ) %>% 
   mutate(percent_grandparents_as_guardians = ACS_PCT_CHILDREN_GRANDPARENT * ((ACS_PCT_GRANDP_RESPS_P + ACS_PCT_GRANDP_RESPS_NO_P)/100)) %>% 
   select(-ACS_PCT_GRANDP_RESPS_P, -ACS_PCT_GRANDP_RESPS_NO_P, -ACS_PCT_CHILDREN_GRANDPARENT)
 ```
 
 ```{r sdoh feature renaming}
 sdoh_data <- sdoh_data %>% 
-  rename("year" = "YEAR",
-         "county_zip" = "COUNTYFIPS",
-         "state_id" = "STATEFIPS",
+  rename("fips_code" = "COUNTYFIPS",
          "state" = "STATE",
-         "county_name" = "COUNTY",
-         "region_name" = "REGION",
+         "county" = "COUNTY",
+         "region" = "REGION",
          "weighted_population"  = "ACS_TOT_POP_WT",
-         "poverty_determining_population" = "ACS_TOT_POP_POV",
-         "total_housing_units"  = "ACS_TOT_HU",
-         "total_hh_count" = "ACS_TOT_HH",
          "average_hh_size" = "ACS_AVG_HH_SIZE",
          "pct_male"  = "ACS_PCT_MALE",
          "pct_female" = "ACS_PCT_FEMALE",
@@ -133,7 +134,6 @@ sdoh_data <- sdoh_data %>%
          "pct_asian" = "ACS_PCT_ASIAN",
          "pct_black" = "ACS_PCT_BLACK",
          "pct_hispanic" = "ACS_PCT_HISPANIC",
-         "pct_multirace" = "ACS_PCT_MULT_RACE",
          "pct_other_race" = "ACS_PCT_OTHER_RACE",
          "pct_white" = "ACS_PCT_WHITE",
          "pct_single_parent" = "ACS_PCT_CHILD_1FAM",
@@ -149,6 +149,8 @@ sdoh_data <- sdoh_data %>%
          "pct_hh_satellite" =  "ACS_PCT_HH_SAT_INTERNET",
          "pct_hh_dial_up" = "ACS_PCT_HH_DIAL_INTERNET_ONLY",
          "pct_employed_admin" = "ACS_PCT_ADMIN",
+         "pct_employed_arts" = "ACS_PCT_ART", 
+         "pct_employed_construction" = "ACS_PCT_CONSTRUCT",
          "pct_employed_education" = "ACS_PCT_EDUC",
          "pct_employed_finance" = "ACS_PCT_FINANCE",
          "pct_employed_government" = "ACS_PCT_GOVT",
@@ -163,7 +165,6 @@ sdoh_data <- sdoh_data %>%
          "pct_employed_wholesale" = "ACS_PCT_WHOLESALE",
          "pct_employed" = "ACS_PCT_EMPLOYED",
          "pct_unemployed" = "ACS_PCT_UNEMPLOY",
-         "pct_not_in_labor_force" = "ACS_PCT_NOT_LABOR",
          "gini_index" = "ACS_GINI_INDEX",
          "pct_hh_inc_10,000" = "ACS_PCT_HH_INC_10000",
          "pct_hh_inc_100,000" = "ACS_PCT_HH_INC_100000",
@@ -219,11 +220,154 @@ sdoh_data <- sdoh_data %>%
   )
 ```
 
+```{r chr feature cleaning 1}
+# remove unwanted features
+# convert principal care providers from per 100,000 people to per 1,000 people to match other data
+
+chr_data <- all_chr_data %>%
+  select(#"statecode","countycode",
+    "fipscode", "state","county", #"year", "county_ranked", "v001_rawvalue", "v001_numerator", "v001_denominator", "v001_cilow", "v001_cihigh", "v001_flag", "v001_race_aian", "v001_race_aian_cilow", "v001_race_aian_cihigh", "v001_race_aian_flag", "v001_race_asian", "v001_race_asian_cilow", "v001_race_black", "v001_race_black_cilow", "v001_race_hispanic", "v001_race_hispanic_cilow", "v001_race_hispanic_cihigh", "v001_race_hispanic_flag", "v001_race_white", "v001_race_white_cilow", "v001_race_white_cihigh", "v001_race_white_flag", "v002_rawvalue", "v002_numerator", "v002_denominator", "v002_cilow", "v002_cihigh", "v036_rawvalue", "v036_numerator", "v036_denominator", "v036_cilow", "v036_cihigh",
+ "v042_rawvalue", #"v042_numerator", "v042_denominator", "v042_cilow", "v042_cihigh",
+ "v037_rawvalue", #"v037_numerator", "v037_denominator", "v037_cilow", "v037_cihigh", "v037_flag", "v037_race_aian", "v037_race_aian_cilow", "v037_race_aian_cihigh", "v037_race_asian", "v037_race_asian_cilow", "v037_race_asian_cihigh", "v037_race_black", "v037_race_black_cilow", "v037_race_black_cihigh", "v037_race_hispanic", "v037_race_hispanic_cilow", "v037_race_hispanic_cihigh", "v037_race_white", "v037_race_white_cilow", "v037_race_white_cihigh",
+ "v009_rawvalue", #"v009_numerator", "v009_denominator", "v009_cilow", "v009_cihigh",
+ "v011_rawvalue", #"v011_numerator", "v011_denominator", "v011_cilow", "v011_cihigh",
+ "v133_rawvalue", #"v133_numerator", "v133_denominator", "v133_cilow", "v133_cihigh", 
+ "v070_rawvalue", #"v070_numerator", "v070_denominator", "v070_cilow", "v070_cihigh", 
+ "v132_rawvalue", #"v132_numerator", "v132_denominator", "v132_cilow", "v132_cihigh", 
+ "v049_rawvalue", #"v049_numerator", "v049_denominator", "v049_cilow", "v049_cihigh", "v134_rawvalue", "v134_numerator", "v134_denominator", "v134_cilow", "v134_cihigh", "v045_rawvalue", "v045_numerator", "v045_denominator", "v045_cilow", "v045_cihigh", 
+ "v014_rawvalue", #"v014_numerator", "v014_denominator", "v014_cilow", "v014_cihigh", "v014_race_aian", "v014_race_aian_cihigh", "v014_race_asian", "v014_race_asian_cilow", "v014_race_asian_cihigh", "v014_race_black", "v014_race_black_cilow", "v014_race_black_cihigh", "v014_race_hispanic", "v014_race_hispanic_cilow", "v014_race_hispanic_cihigh", "v014_race_white", "v014_race_white_cilow", "v014_race_white_cihigh",
+ "v085_rawvalue", #"v085_numerator", "v085_denominator", "v085_cilow", "v085_cihigh", 
+ "v004_rawvalue", #"v004_numerator", "v004_denominator", "v004_cilow", "v004_cihigh","v004_other_data_1", "v088_rawvalue", "v088_numerator", "v088_denominator", "v088_cilow", "v088_cihigh", "v088_other_data_1",
+ "v062_rawvalue", #"v062_numerator", "v062_denominator", "v062_cilow", "v062_cihigh", "v062_other_data_1", 
+ "v005_rawvalue", #"v005_numerator", "v005_denominator", "v005_cilow", "v005_cihigh", "v005_race_aian", "v005_race_asian", "v005_race_black", "v005_race_hispanic", "v005_race_white", 
+ "v050_rawvalue", #"v050_numerator", "v050_denominator", "v050_cilow", "v050_cihigh", "v050_race_aian", "v050_race_asian", "v050_race_black", "v050_race_hispanic", "v050_race_white", 
+ "v155_rawvalue", #"v155_numerator", "v155_denominator", "v155_cilow", "v155_cihigh", "v155_race_aian", "v155_race_asian", "v155_race_black", "v155_race_hispanic", "v155_race_white", 
+ "v168_rawvalue", #"v168_numerator", "v168_denominator", "v168_cilow", "v168_cihigh", 
+ "v069_rawvalue", #"v069_numerator", "v069_denominator", "v069_cilow", "v069_cihigh", 
+ "v023_rawvalue", #"v023_numerator", "v023_denominator", "v023_cilow", "v023_cihigh",
+ "v024_rawvalue", #"v024_numerator", "v024_denominator", "v024_cilow", "v024_cihigh", "v024_race_aian", "v024_race_aian_cilow", "v024_race_aian_cihigh", "v024_race_asian", "v024_race_asian_cilow", "v024_race_asian_cihigh", "v024_race_black", "v024_race_black_cilow", "v024_race_black_cihigh", "v024_race_hispanic", "v024_race_hispanic_cilow", "v024_race_hispanic_cihigh", "v024_race_white", "v024_race_white_cilow", "v024_race_white_cihigh", 
+ "v044_rawvalue", #"v044_numerator", "v044_denominator", "v044_cilow", "v044_cihigh", "v082_rawvalue", "v082_numerator", "v082_denominator", "v082_cilow", "v082_cihigh", 
+ "v140_rawvalue", #"v140_numerator", "v140_denominator", "v140_cilow", "v140_cihigh", 
+ "v135_rawvalue", #"v135_numerator", "v135_denominator", "v135_cilow", "v135_cihigh", "v135_race_aian", "v135_race_aian_cilow", "v135_race_aian_cihigh", "v135_race_asian", "v135_race_asian_cilow", "v135_race_asian_cihigh", "v135_race_black", "v135_race_black_cilow", "v135_race_black_cihigh", "v135_race_hispanic" , "v135_race_hispanic_cilow", "v135_race_hispanic_cihigh", "v135_race_white", "v135_race_white_cilow", "v135_race_white_cihigh", 
+ "v125_rawvalue", #"v125_numerator", "v125_denominator", "v125_cilow", "v125_cihigh", 
+ "v124_rawvalue", #"v124_numerator", "v124_denominator", "v124_cilow", "v124_cihigh", "v136_rawvalue", "v136_numerator", "v136_denominator", "v136_cilow", "v136_cihigh", 
+ "v136_other_data_1", #"v136_other_data_1_cilow", "v136_other_data_1_cihigh",
+ "v136_other_data_2", #"v136_other_data_2_cilow", "v136_other_data_2_cihigh", 
+ "v136_other_data_3", #"v136_other_data_3_cilow", "v136_other_data_3_cihigh", "v067_rawvalue", "v067_numerator", "v067_denominator", "v067_cilow", "v067_cihigh", "v067_race_aian", "v067_race_aian_cilow", "v067_race_aian_cihigh", "v067_race_asian", "v067_race_asian_cilow", "v067_race_asian_cihigh", "v067_race_black", "v067_race_black_cilow", "v067_race_black_cihigh", "v067_race_hispanic", "v067_race_hispanic_cilow", "v067_race_hispanic_cihigh", "v067_race_white", "v067_race_white_cilow", "v067_race_white_cihigh", "v137_rawvalue", "v137_numerator", "v137_denominator", "v137_cilow", "v137_cihigh", 
+ "v147_rawvalue", #"v147_numerator", "v147_denominator", "v147_cilow", "v147_cihigh", "v147_race_aian", "v147_race_aian_cilow", "v147_race_aian_cihigh", "v147_race_asian", "v147_race_asian_cilow", "v147_race_asian_cihigh", "v147_race_black", "v147_race_black_cilow", "v147_race_black_cihigh", "v147_race_hispanic", "v147_race_hispanic_cilow", "v147_race_hispanic_cihigh", "v147_race_white", "v147_race_white_cilow", "v147_race_white_cihigh", 
+ "v127_rawvalue", #"v127_numerator", "v127_denominator", "v127_cilow", "v127_cihigh", "v127_race_aian", "v127_race_aian_cilow", "v127_race_aian_cihigh", "v127_race_asian", "v127_race_asian_cilow", "v127_race_asian_cihigh", "v127_race_black", "v127_race_black_cilow", "v127_race_black_cihigh", "v127_race_hispanic", "v127_race_hispanic_cilow", "v127_race_hispanic_cihigh", "v127_race_white", "v127_race_white_cilow", "v127_race_white_cihigh", 
+ "v128_rawvalue", #"v128_numerator", "v128_denominator", "v128_cilow", "v128_cihigh", "v128_race_aian", "v128_race_aian_cilow", "v128_race_aian_cihigh", "v128_race_asian", "v128_race_asian_cilow", "v128_race_asian_cihigh", "v128_race_black", "v128_race_black_cilow", "v128_race_black_cihigh", "v128_race_hispanic", "v128_race_hispanic_cilow", "v128_race_hispanic_cihigh", "v128_race_white", "v128_race_white_cilow", "v128_race_white_cihigh", 
+ "v129_rawvalue", #"v129_numerator", "v129_denominator", "v129_cilow", "v129_cihigh", "v129_race_aian", "v129_race_aian_cilow", "v129_race_aian_cihigh", "v129_race_asian", "v129_race_asian_cilow","v129_race_asian_cihigh", "v129_race_black", "v129_race_black_cilow", "v129_race_black_cihigh", "v129_race_hispanic", "v129_race_hispanic_cilow", "v129_race_hispanic_cihigh", "v129_race_white", "v129_race_white_cilow", "v129_race_white_cihigh", 
+ "v144_rawvalue", #"v144_numerator", "v144_denominator", "v144_cilow", "v144_cihigh", "v145_rawvalue", "v145_numerator", "v145_denominator", "v145_cilow", "v145_cihigh", 
+ "v060_rawvalue", #"v060_numerator", "v060_denominator", "v060_cilow", "v060_cihigh", 
+ "v061_rawvalue", #"v061_numerator", "v061_denominator", "v061_cilow", "v061_cihigh", 
+ "v139_rawvalue", #"v139_numerator", "v139_denominator", "v139_cilow", "v139_cihigh", "v083_rawvalue", "v083_numerator", "v083_denominator", "v083_cilow", "v083_cihigh", 
+ "v138_rawvalue", #"v138_numerator", "v138_denominator", "v138_cilow", "v138_cihigh", "v138_race_aian", "v138_race_aian_cilow", "v138_race_aian_cihigh", "v138_race_asian", "v138_race_asian_cilow", "v138_race_asian_cihigh", "v138_race_black", "v138_race_black_cilow", "v138_race_black_cihigh", "v138_race_hispanic", "v138_race_hispanic_cilow", "v138_race_hispanic_cihigh", "v138_race_white", "v138_race_white_cilow", "v138_race_white_cihigh", 
+ "v143_rawvalue", #"v143_numerator", "v143_denominator", "v143_cilow", "v143_cihigh", "v003_rawvalue", "v003_numerator", "v003_denominator", "v003_cilow", "v003_cihigh", "v122_rawvalue", "v122_numerator", "v122_denominator", "v122_cilow", "v122_cihigh", "v131_rawvalue", "v131_numerator, "v131_denominator", "v131_cilow", "v131_cihigh", "v131_other_data_1", 
+ "v021_rawvalue", #"v021_numerator", "v021_denominator", "v021_cilow", "v021_cihigh", 
+ "v149_rawvalue", #"v149_numerator", "v149_denominator", "v149_cilow", "v149_cihigh", 
+ "v159_rawvalue", #"v159_numerator", "v159_denominator", "v159_cilow", "v159_cihigh", "v159_race_aian", "v159_race_asian", "v159_race_black", "v159_race_hispanic", "v159_race_white", 
+ "v160_rawvalue", #"v160_numerator", "v160_denominator", "v160_cilow", "v160_cihigh", "v160_race_aian", "v160_race_asian", "v160_race_black", "v160_race_hispanic", "v160_race_white", 
+ "v167_rawvalue", #"v167_numerator", "v167_denominator", "v167_cilow", "v167_cihigh", 
+ "v169_rawvalue", #"v169_numerator", "v169_denominator", "v169_cilow", "v169_cihigh", 
+ "v151_rawvalue", #"v151_numerator", "v151_denominator", "v151_cilow", "v151_cihigh", 
+ "v063_rawvalue", #"v063_numerator", "v063_denominator", "v063_cilow", "v063_cihigh", "v063_race_aian", "v063_race_aian_cilow", "v063_race_aian_cihigh", "v063_race_asian", "v063_race_asian_cilow", "v063_race_asian_cihigh", "v063_race_black", "v063_race_black_cilow", "v063_race_black_cihigh", "v063_race_hispanic", "v063_race_hispanic_cilow", "v063_race_hispanic_cihigh", "v063_race_white", "v063_race_white_cilow", "v063_race_white_cihigh", 
+ "v170_rawvalue", #"v170_numerator", "v170_denominator", "v170_cilow", "v170_cihigh", 
+ "v065_rawvalue", #"v065_numerator", "v065_denominator", "v065_cilow", "v065_cihigh", 
+ "v141_rawvalue", #"v141_numerator", "v141_denominator", "v141_cilow", "v141_cihigh", 
+ "v171_rawvalue", #"v171_numerator", "v171_denominator", "v171_cilow", "v171_cihigh", "v172_rawvalue", "v172_numerator", "v172_denominator", "v172_cilow", "v172_cihigh", 
+ "v015_rawvalue", #"v015_numerator", "v015_denominator", "v015_cilow", "v015_cihigh", "v015_race_aian", "v015_race_aian_cilow", "v015_race_aian_cihigh", "v015_race_asian", "v015_race_asian_cilow", "v015_race_asian_cihigh", "v015_race_black", "v015_race_black_cilow", "v015_race_black_cihigh", "v015_race_hispanic", "v015_race_hispanic_cilow", "v015_race_hispanic_cihigh", "v015_race_white", "v015_race_white_cilow", "v015_race_white_cihigh",
+ "v161_rawvalue", #"v161_numerator", "v161_denominator", "v161_cilow", "v161_cihigh", "v161_other_data_1", "v161_race_aian", "v161_race_aian_cilow", "v161_race_aian_cihigh", "v161_race_asian", "v161_race_asian_cilow", "v161_race_asian_cihigh", "v161_race_black", "v161_race_black_cilow", "v161_race_black_cihigh", "v161_race_hispanic", "v161_race_hispanic_cilow", "v161_race_hispanic_cihigh", "v161_race_white", "v161_race_white_cilow", "v161_race_white_cihigh", 
+ "v148_rawvalue", #"v148_numerator", "v148_denominator", "v148_cilow", "v148_cihigh", "v148_race_aian", "v148_race_aian_cilow", "v148_race_aian_cihigh", "v148_race_asian", "v148_race_asian_cilow", "v148_race_asian_cihigh", "v148_race_black", "v148_race_black_cilow", "v148_race_black_cihigh", "v148_race_hispanic", "v148_race_hispanic_cilow", "v148_race_hispanic_cihigh", "v148_race_white", "v148_race_white_cilow", "v148_race_white_cihigh", "v039_rawvalue", "v039_numerator", "v039_denominator", "v039_cilow", "v039_cihigh", "v039_race_aian", "v039_race_aian_cilow", "v039_race_aian_cihigh", "v039_race_asian", "v039_race_asian_cilow", "v039_race_asian_cihigh", "v039_race_black", "v039_race_black_cilow", "v039_race_black_cihigh", "v039_race_hispanic", "v039_race_hispanic_cilow", "v039_race_hispanic_cihigh", "v039_race_white", "v039_race_white_cilow", "v039_race_white_cihigh", 
+ "v158_rawvalue", #"v158_numerator", "v158_denominator", "v158_cilow", "v158_cihigh", "v158_other_data_1", "v158_other_data_2", 
+ "v177_rawvalue", #"v177_numerator", "v177_denominator", "v177_cilow", "v177_cihigh", "v178_rawvalue", "v178_numerator", "v178_denominator", "v178_cilow", "v178_cihigh", 
+ "v156_rawvalue", #"v156_numerator", "v156_denominator", "v156_cilow", "v156_cihigh", "v153_rawvalue", 
+ "v153_numerator", #"v153_denominator", "v153_cilow", "v153_cihigh", "v154_rawvalue", "v154_numerator", "v154_denominator", "v154_cilow", "v154_cihigh", "v166_rawvalue", "v166_numerator", "v166_denominator", "v166_cilow", "v166_cihigh", "v051_rawvalue", "v051_numerator", "v051_denominator", "v051_cilow", "v051_cihigh", 
+ "v052_rawvalue", #"v052_numerator", "v052_denominator", "v052_cilow", "v052_cihigh", 
+ "v053_rawvalue", #"v053_numerator", "v053_denominator", "v053_cilow", "v053_cihigh", "v054_rawvalue", "v054_numerator", "v054_denominator", "v054_cilow", "v054_cihigh", "v055_rawvalue", "v055_numerator", "v055_denominator", "v055_cilow", "v055_cihigh", "v081_rawvalue", "v081_numerator", "v081_denominator", "v081_cilow", "v081_cihigh", "v080_rawvalue", "v080_numerator" , "v080_denominator", "v080_cilow", "v080_cihigh", "v056_rawvalue", "v056_numerator", "v056_denominator", "v056_cilow", "v056_cihigh", "v126_rawvalue", "v126_numerator", "v126_denominator", "v126_cilow", "v126_cihigh", "v059_rawvalue", "v059_numerator", "v059_denominator", "v059_cilow", "v059_cihigh", "v057_rawvalue", "v057_numerator", "v057_denominator", "v057_cilow", "v057_cihigh", 
+ "v058_rawvalue", #"v058_numerator", "v058_denominator", "v058_cilow", "v058_cihigh"
+  ) %>% 
+  mutate(pcp_pt = v004_rawvalue/100) %>% 
+  select(-v004_rawvalue)
+```
+
+```{r chr feature renaming}
+chr_data <- chr_data %>% 
+  rename("fips_code" = "fipscode",
+         "state" =  "state", 
+         "county"  ="county",  
+         "poor_menatal_health" = "v042_rawvalue",
+         "pct_low_birthweight" = "v037_rawvalue",
+         "pct_adult_smokers" = "v009_rawvalue",
+         "pct_obese_adults" = "v011_rawvalue",
+         "food_enviroment_1:10_bad:good" = "v133_rawvalue",
+         "pct_no_exercise" = "v070_rawvalue",
+         "pct_access_to_exercise" = "v132_rawvalue",
+         "pct_binge_drinkers" = "v049_rawvalue",
+         "teen_births_prk_1k" = "v014_rawvalue",
+         "pct_under_65_no_health_insurance" = "v085_rawvalue",
+         "hospital_stay_per_100k" = "v005_rawvalue",
+         "pct_elderly_mmmograms" = "v050_rawvalue",
+         "pct_flu_vaccines_billed" = "v155_rawvalue",
+         "pct_highschool_diploma" = "v168_rawvalue",
+         "pct_some_college" = "v069_rawvalue",
+         "pct_unemployed" = "v023_rawvalue",
+         "pct_adult_poverty" = "v024_rawvalue",
+         "inequality_ratio" = "v044_rawvalue",
+         "social_clubs_per_10k" = "v140_rawvalue",
+         "injury_death_rate_per_100k" = "v135_rawvalue",
+         "air_polution_metric" =  "v125_rawvalue",
+         "water_0:1_bad_good" = "v124_rawvalue",
+         "pct_high_housing_costs" = "v136_other_data_1",
+         "pct_overcrowded_hh" = "v136_other_data_2",
+         "pct_no_kitchen_or_plumbinmg" = "v136_other_data_3",
+         "life_expectancy_years" = "v147_rawvalue",
+         "premature_deaths_per_100k" = "v127_rawvalue",
+         "underage_deaths_per_100k" = "v128_rawvalue",
+         "infant_deaths_per_1k_births" = "v129_rawvalue",
+         "pct_poor_health" = "v144_rawvalue",
+         "pct_diabetes" =  "v060_rawvalue",
+         "pct_hiv" = "v061_rawvalue",
+         "pct_food_insecurities" = "v139_rawvalue",
+         "drug_overdose_per_100k" = "v138_rawvalue",
+         "pct_insufficie" = "v143_rawvalue",
+         "pct_on_time_hs_graduation" = "v021_rawvalue",
+         "pct_disconnected_youth" = "v149_rawvalue",
+         "children_reading_score" = "v159_rawvalue",
+         "children_math_score" = "v160_rawvalue",
+         "school_segregation_0:1__low:high" = "v167_rawvalue",
+         "school_funding_gap" = "v169_rawvalue",
+         "women_to_man_pay_ratio" = "v151_rawvalue",
+         "median_hh_income" = "v063_rawvalue",
+         "hourly_living_wage" = "v170_rawvalue",
+         "children_eligible_for_lunch" = "v065_rawvalue",
+         "black_white_segregation" = "v141_rawvalue",
+         "pct_income_to_childcare" = "v171_rawvalue",
+         "homicides_per_100k" = "v015_rawvalue",
+         "suicides_per_100k" = "v161_rawvalue",
+         "firearm_fatalities_per_100k" = "v148_rawvalue",
+         "juvenile_arrests_per_1k" = "v158_rawvalue",
+         "pct_voters" = "v177_rawvalue",
+         "traffic_per_meter" = "v156_rawvalue",
+         "pct_home_owner" = "v153_numerator",
+         "pct_0_17_age" = "v052_rawvalue",
+         "pct_18_65_age" = "v053_rawvalue",
+         "pct_rural_population" = "v058_rawvalue",    
+  )
+```
+
+
+
+
 
 $$Data Exploration$$
 
 ```{r}
+names(chr_data)
 
+```
+```{r}
+names(sdoh_data)
 ```
 
 
