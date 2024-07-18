@@ -23,6 +23,7 @@ library(ggplot2)             # data visualization
 #library(tidyverse)          # collection of statistical packages, packages loaded individually
 library(leaps)               # for resubset selection
 library(caret)               # test for correlation
+library(car)                 # for VIF
 ```
 *Data load*
 ```{r data load}
@@ -477,10 +478,15 @@ glimpse(qol_data)
 # find predictors with high correlation to shrink the model
 
 # Subset the dataset to include only numeric variables
-numeric_data <- qol_data[sapply(qol_data, is.numeric)]
+# identify values with variance -inflation factors
+qol_numeric <- qol_data %>%
+  mutate(response = if_else(response == "worse", 0, 1)) %>% 
+  select(-state,
+         -county,
+         -region)
 
 # Calculate the correlation matrix
-cor_matrix <- cor(numeric_data)
+cor_matrix <- cor(qol_numeric)
 
 # Find the indices of correlations greater than 0.7
 high_cor_indices <- which(abs(cor_matrix) > 0.7, arr.ind = TRUE)
@@ -501,20 +507,86 @@ print(high_cor_pairs)
 
 ```
 
-```{r qol subset selection}
-# identify best model for response with regsubset
-qol_regfit_ful <- regsubsets(response ~ ., qol_data,
-                             really.big = T)
+Remove predictors with large correlation value (|0.7|) or greater with multicollinearity and low relavence.
 
-summary(qol_regfit_ful)
+```{r correlation removal}
+qol_numeric <- qol_numeric %>%
+  select(-adv_practice_nurse_pt,
+         -pct_0_17_age,
+         -pct_adult_poverty,
+         -pct_female,
+         -pct_hh_broadband,
+         -pct_hh_cell_data,
+         -matches("pct_hh_inc_10,000"),
+         -matches("pct_hh_inc_100,000"),
+         -matches("pct_hh_inc_14,999"),
+         -matches("pct_hh_inc_24,999"),
+         -matches("pct_hh_inc_49,999"),
+         -pct_hh_no_computing_device,
+         -pct_hh_no_internet,
+         -pct_hh_smartphone,
+         -pct_hh_tablet,
+         -pct_no_exercise,
+         -pct_not_citizens,
+         -pct_people_in_poverty,
+         -pct_unemployed.x,
+         -per_capita_income,
+         -weighted_population,
+         -pct_food_insecurities,
+         -pct_hh_computer,
+         -pct_naturalized_citizens,
+         -median_rent,
+         -median_home_value,
+         -`pct_w/_medicaid`
+  )
+```
+
+
+```{r find values with nzr}
+# identify predictors with near-zero variance (high collinearity)
+nzv <- nearZeroVar(qol_numeric, saveMetrics = TRUE)
+
+print(nzv)
+```
+
+```{r nzr removal}
+qol_numeric <- qol_numeric %>%
+  select(-syringe_exchange_pt
+  )
+```
+
+
+```{r identify vif}
+vif_values <- vif(lm(response ~ ., data = qol_numeric))
+high_vif <- names(vif_values[vif_values > 5])
+high_vif
+```
+
+```{r qol regsubsets selection}
+# identify best model for response with regsubset
+qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
+                             really.big = TRUE)
+
+summary(qol_regfit_full)
+
+```
+
+```{r identifying ideal # of variables}
+reg_fit_summary <- summary(qol_regfit_full)
+
+# identifying ideal number of variables
+which.min(reg_fit_summary$rss)
+which.max(reg_fit_summary$adjr2)
+which.min(reg_fit_summary$cp)
+which.max(reg_fit_summary$bic)
 ```
 
 
 
-
-
 ```{r qol names}
-names(qol_data)
+qol_names <- names(qol_numeric)
+
+qol_names
 ```
 ```{r sdoh names}
 names(sdoh_data)
@@ -525,6 +597,31 @@ names(chr_data)
 
 
 
+```{r}
+# Extract the summary
+reg_summary <- summary(qol_regfit_ful)
+
+# Get the matrix of which variables are included in each model
+reg_summary_matrix <- reg_summary$which
+
+# Convert to data frame
+reg_summary_df <- as.data.frame(reg_summary_matrix)
+
+
+# Rename columns to make it more readable
+colnames(reg_summary_df) <- sub("X\\d+", "", colnames(reg_summary_df))
+
+
+# Filter for models with decreasing numbers of predictors
+num_predictors <- ncol(reg_summary_df) - 1  # Exclude Intercept column
+filtered_models <- lapply((num_predictors - 81 + 1):(num_predictors - 60 + 1), function(n) {
+  reg_summary_df[rowSums(reg_summary_df[, -1]) == n, ]
+})
+
+# Print the filtered models
+print(filtered_models)
+
+```
 
 
 
