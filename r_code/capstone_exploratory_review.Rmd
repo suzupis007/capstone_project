@@ -24,6 +24,8 @@ library(ggplot2)             # data visualization
 library(leaps)               # for resubset selection
 library(caret)               # test for correlation
 library(car)                 # for VIF
+library(scales)              # for visualizing plots in %
+library(forcats)             # ordering data frames
 ```
 *Data load*
 ```{r data load}
@@ -584,9 +586,11 @@ which.max(reg_fit_summary$bic)
 
 
 ```{r qol names}
-qol_names <- names(qol_numeric)
+qol_names <- names(qol_data)
 
 qol_names
+
+qol_state_names <- names(qol_state_median)
 ```
 ```{r sdoh names}
 names(sdoh_data)
@@ -595,36 +599,73 @@ names(sdoh_data)
 names(chr_data)
 ```
 
+```{r group by state}
+qol_state_median <- qol_data %>%
+  group_by(state) %>%
+  summarize(across(where(is.numeric), median, na.rm = TRUE))
 
-
-```{r}
-# Extract the summary
-reg_summary <- summary(qol_regfit_ful)
-
-# Get the matrix of which variables are included in each model
-reg_summary_matrix <- reg_summary$which
-
-# Convert to data frame
-reg_summary_df <- as.data.frame(reg_summary_matrix)
-
-
-# Rename columns to make it more readable
-colnames(reg_summary_df) <- sub("X\\d+", "", colnames(reg_summary_df))
-
-
-# Filter for models with decreasing numbers of predictors
-num_predictors <- ncol(reg_summary_df) - 1  # Exclude Intercept column
-filtered_models <- lapply((num_predictors - 81 + 1):(num_predictors - 60 + 1), function(n) {
-  reg_summary_df[rowSums(reg_summary_df[, -1]) == n, ]
-})
-
-# Print the filtered models
-print(filtered_models)
-
+qol_state_mean <- qol_data %>%
+  group_by(state) %>%
+  summarize(across(where(is.numeric), mean, na.rm = TRUE))
 ```
 
 
 
+```{r state median response}
+# Reorder states by median pct_poor_to_fair_health
+qol_state_median <- qol_state_median %>%
+  mutate(state = fct_reorder(state, pct_poor_to_fair_health, .desc = TRUE))
+
+# Create the bar plot with vertically rotated labels and percent y-axis
+ggplot(data = qol_state_median,
+       aes(x = state, y = pct_poor_to_fair_health)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = percent_format(scale = 100)) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  labs(title = "States by Percent Poor to Fair Health From Worst to Best",
+       x = "State", 
+       y = "Percent Reporting Poor to Fair Health")
+
+```
+
+```{r}
+# Create the scatter plot with x-axis limit, percentage formatting, and state labels
+ggplot(data = qol_state_median,
+       aes(x = pct_voters, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_text(aes(label = state), hjust = 1.2, vjust = 0.5, size = 2) + # Add state labels
+  scale_y_continuous(labels = percent_format(scale = 100)) +
+  scale_x_continuous(labels = percent_format(scale = 100), limits = c(0.5, 0.81)) +
+  labs(title = "Percent Poor to Fair Health From Worst to Best Vs Voters",
+       x = "Percent Voters", 
+       y = "Percent Reporting Poor to Fair Health")
+```
+
+```{r}
+# Create the scatter plot with x-axis limit, percentage formatting, and state labels
+ggplot(data = qol_state_median,
+       aes(x = school_funding_gap, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_text(aes(label = state), hjust = 1.2, vjust = 0.5, size = 2) + # Add state labels
+  scale_y_continuous(labels = percent_format(scale = 100)) +
+  scale_x_continuous(limits = c(-6000, 13000)) +
+  labs(title = "Percent Poor to Fair Health From Worst to Best Vs Voters",
+       x = "School Funding Gap", 
+       y = "Percent Reporting Poor to Fair Health")
+```
+
+```{r}
+# Create the scatter plot with x-axis limit, percentage formatting, and state labels
+ggplot(data = qol_state_median,
+       aes(x = pct_voters, y = gini_index)) +
+  geom_point() +
+  geom_text(aes(label = state), hjust = 1.2, vjust = 0.5, size = 2) + # Add state labels
+  scale_y_continuous() +
+  scale_x_continuous(labels = percent_format(scale = 100), limits = c(0.42,0.8)) +
+  labs(title = "Percent Poor to Fair Health From Worst to Best Vs Voters",
+       x = "Percent Voting", 
+       y = "binge drinking")
+```
 
 
 
