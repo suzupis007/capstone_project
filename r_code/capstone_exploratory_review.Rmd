@@ -379,6 +379,35 @@ qol_data <- inner_join(sdoh_data,
                       by = "fips_code")
 ```
 
+Comparing important features from the "community aspect domain" of SDOH with the response variable "Percentage of adults reporting poor to fair health per county"
+
+```{r}
+
+# Create a list of features
+features <- c("pct_single_parent", "percent_grandparents_as_guardians", 
+              "pct_adult_smokers", "pct_obese_adults", "pct_binge_drinkers", 
+              "social_clubs_per_10k", "pct_overcrowded_hh", "average_hh_size" )
+
+# Create a plot for each feature
+for (feature in features) {
+  print(
+    ggplot(qol_data, aes_string(x = feature, y = "pct_poor_to_fair_health")) +
+      geom_point(color = "steelblue") +
+      geom_smooth(method = "lm", se = FALSE, color = "red") +
+      labs(title = paste("Scatter Plot of", feature, "Vs 'Poor_To_Fair_Health' Reported Per County"),
+           subtitle = "data from www.ahrq.gov and www.countyhealthrankings.org ",
+           x = feature,
+           y = "Percentage of Poor to Fair Health")
+  )
+}
+
+
+
+```
+
+
+
+
 ```{r qol dataset cleaning}
 # create response vector
 qol_data <- qol_data %>%
@@ -582,7 +611,12 @@ which.max(reg_fit_summary$adjr2)
 which.min(reg_fit_summary$cp)
 which.max(reg_fit_summary$bic)
 ```
+```{r}
+qol_state_median <- qol_data %>%
+  group_by(state) %>%
+  summarize(across(where(is.numeric), median, na.rm = TRUE))
 
+```
 
 
 ```{r qol names}
@@ -592,9 +626,11 @@ qol_names
 
 qol_state_names <- names(qol_state_median)
 ```
+
 ```{r sdoh names}
 names(sdoh_data)
 ```
+
 ```{r chr names}
 names(chr_data)
 ```
@@ -609,9 +645,16 @@ qol_state_mean <- qol_data %>%
   summarize(across(where(is.numeric), mean, na.rm = TRUE))
 ```
 
+```{r}
+names(qol_state_median)
+```
+
+
 
 
 ```{r state median response}
+
+
 # Reorder states by median pct_poor_to_fair_health
 qol_state_median <- qol_state_median %>%
   mutate(state = fct_reorder(state, pct_poor_to_fair_health, .desc = TRUE))
@@ -667,6 +710,9 @@ ggplot(data = qol_state_median,
        y = "binge drinking")
 ```
 
+```{r}
+names(qol_numeric)
+```
 
 
 
