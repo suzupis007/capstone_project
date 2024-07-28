@@ -5,3 +5,8 @@ Research question: “How do social determinants of health affect quality of lif
 Hypothesis: Social determinants of health, such as economic stability, social connectedness,access to healthcare, and neighborhood environment, significantly predict self-reported healthstatus in US counties.
 
 Prediction: US counties with higher economic security, stronger social support infrastructure,better access to healthcare services, and safer, more accessible neighborhoods will report better overall health status compared to counties lacking these social determinants.
+
+The predictor variables are obtained from the Social Determinants of Health (SDOH) Database provided by the Agency for Healthcare Research and Quality (AHRQ). 
+The response variable represents "the percentage of adults reporting fair or poor health."
+
+To test the research question or hypothesis, the statistical software R is being used. 
