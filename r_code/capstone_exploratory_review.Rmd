@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 $$Enviroment Build$$
 
 *Packages Load*
-```{r package load}
+```{r package load: su}
 # load packages
 
 library(readr)         # load csv files
@@ -20,7 +20,7 @@ library(readxl)        # load excel files
 library(dplyr)         # data manipulation
 library(lubridate)     # date & time manipulation
 library(ggplot2)       # data visualization
-#library(tidyverse)    # collection of statistical packages, packages loaded individually
+library(tidyr)         # collection of statistical packages, packages loaded individually
 library(corrplot)      # to visualize correlations
 library(leaps)         # for subset selection
 library(caret)         # test for correlation
@@ -29,13 +29,13 @@ library(scales)        # for visualizing plots in %
 library(forcats)       # ordering data frames
 ```
 *Data load*
-```{r data load}
+```{r data load: su}
 # load data
-sdoh_data <- read_csv("data/sdoh_data.csv")
-dim(sdoh_data)
+all_sdoh_data <- read_csv("data/sdoh_data.csv")
+dim(all_sdoh_data)
 
-chr_data <- read_csv("data/chr_data.csv", skip = 1)
-dim(chr_data)
+all_chr_data <- read_csv("data/chr_data.csv", skip = 1)
+dim(all_chr_data)
 
 # data sets are extremely large, it is determined to remove unwanted features before any analysis
 ```
@@ -44,11 +44,112 @@ $$Data Cleaning$$
 
 *Initial data cleaning*
 
-```{r sdoh feature cleaning 1}
+```{r sdoh feature cleaning 1: su}
 # remove unwanted features, create calculated feature, convert fips_code to data type matching chr_data
 
-sdoh_data <- sdoh_data %>% 
-  select("COUNTYFIPS", "STATE", "COUNTY", "REGION", "ACS_TOT_POP_WT", "ACS_AVG_HH_SIZE", "ACS_PCT_MALE", "ACS_PCT_FEMALE", "ACS_PCT_NON_CITIZEN", "ACS_PCT_CTZ_NATURALIZED", "ACS_PCT_CTZ_ABOVE18", "ACS_PCT_ENGL_NOT_ALL", "ACS_PCT_AIAN", "ACS_PCT_ASIAN", "ACS_PCT_BLACK", "ACS_PCT_HISPANIC", "ACS_PCT_OTHER_RACE", "ACS_PCT_WHITE", "ACS_PCT_CHILD_1FAM", "ACS_PCT_CHILDREN_GRANDPARENT", "ACS_PCT_GRANDP_RESPS_NO_P", "ACS_PCT_GRANDP_RESPS_P", "ACS_PCT_HH_NO_COMP_DEV", "ACS_PCT_HH_SMARTPHONE", "ACS_PCT_HH_TABLET", "ACS_PCT_HH_PC", "ACS_PCT_HH_OTHER_COMP", "ACS_PCT_HH_INTERNET", "ACS_PCT_HH_BROADBAND_ANY", "ACS_PCT_HH_CELLULAR", "ACS_PCT_HH_NO_INTERNET", "ACS_PCT_HH_SAT_INTERNET", "ACS_PCT_HH_DIAL_INTERNET_ONLY", "ACS_PCT_ADMIN", "ACS_PCT_ART", "ACS_PCT_CONSTRUCT", "ACS_PCT_EDUC", "ACS_PCT_FINANCE", "ACS_PCT_GOVT", "ACS_PCT_INFORM", "ACS_PCT_MANUFACT", "ACS_PCT_NATURE", "ACS_PCT_OTHER", "ACS_PCT_PROFESS", "ACS_PCT_PVT_NONPROFIT", "ACS_PCT_RETAIL", "ACS_PCT_TRANSPORT", "ACS_PCT_WHOLESALE", "ACS_PCT_EMPLOYED", "ACS_PCT_UNEMPLOY", "ACS_GINI_INDEX", "ACS_PCT_HH_INC_10000", "ACS_PCT_HH_INC_100000", "ACS_PCT_HH_INC_14999", "ACS_PCT_HH_INC_24999", "ACS_PCT_HH_INC_49999", "ACS_PCT_HH_INC_99999", "ACS_PER_CAPITA_INC", "ACS_MEDIAN_HOME_VALUE", "ACS_MEDIAN_RENT", "ACS_PCT_VACANT_HU", "ACS_PCT_COMMT_15MIN", "ACS_PCT_COMMT_29MIN", "ACS_PCT_COMMT_59MIN", "ACS_PCT_COMMT_60MINUP", "ACS_PCT_PUBL_TRANSIT", "ACS_PCT_MEDICAID_ANY", "ACS_PCT_MEDICARE_ONLY", "AHRF_ADV_NURSES_RATE", "AHRF_CLIN_NURSE_SPEC_RATE", "AHRF_DENTISTS_RATE", "AHRF_NURSE_ANESTH_RATE", "AHRF_NURSE_MIDWIVES_RATE", "AHRF_NURSE_PRACT_RATE", "AHRF_PHYSICIAN_ASSIST_RATE", "AMFAR_SSP_RATE", "AMFAR_MEDSAFAC_RATE", "AMFAR_MHFAC_RATE", "CEN_AREALAND_SQM_COUNTY", "CEN_POPDENSITY_COUNTY", "NEPHTN_HEATIND_90", "EPAA_2NDMAX_CO_1HR", "EPAA_98PR_NO2_1HR", "EPAA_MAX_PB_3MON", "EPAA_98PR_PM25_DAILY", "EPAA_99PR_SO2_1HR", "SAIPE_MEDIAN_HH_INCOME", "SAIPE_PCT_POV", "LTC_AVG_OBS_REHOSP_RATE", "LTC_AVG_OBS_SUCCESSFUL_DISC_RATE", "MGV_PER_CAPITA_STD_IP", "MGV_PER_CAPITA_STD_OP", "MGV_PER_CAPITA_STD_EM", "MGV_PER_CAPITA_STD_PA", "MGV_PER_CAPITA_STD_HC", "POS_MEDIAN_DIST_ED", "POS_MEDIAN_DIST_MEDSURG_ICU", "POS_MEDIAN_DIST_TRAUMA", "POS_MEDIAN_DIST_PED_ICU", "POS_MEDIAN_DIST_OBSTETRICS", "POS_MEDIAN_DIST_CLINIC", "POS_MEDIAN_DIST_ALC", 
+sdoh_data <- all_sdoh_data %>% 
+  select("COUNTYFIPS", 
+         "STATE", 
+         "COUNTY", 
+         "REGION", 
+         "ACS_TOT_POP_WT", 
+         "ACS_AVG_HH_SIZE", 
+         "ACS_PCT_MALE", 
+         "ACS_PCT_FEMALE", 
+         "ACS_PCT_NON_CITIZEN", 
+         "ACS_PCT_CTZ_NATURALIZED", 
+         "ACS_PCT_CTZ_ABOVE18", 
+         "ACS_PCT_ENGL_NOT_ALL", 
+         "ACS_PCT_AIAN", 
+         "ACS_PCT_ASIAN", 
+         "ACS_PCT_BLACK", 
+         "ACS_PCT_HISPANIC", 
+         "ACS_PCT_OTHER_RACE", 
+         "ACS_PCT_WHITE", 
+         "ACS_PCT_CHILD_1FAM", 
+         "ACS_PCT_CHILDREN_GRANDPARENT", 
+         "ACS_PCT_GRANDP_RESPS_NO_P", 
+         "ACS_PCT_GRANDP_RESPS_P", 
+         "ACS_PCT_HH_NO_COMP_DEV", 
+         "ACS_PCT_HH_SMARTPHONE", 
+         "ACS_PCT_HH_TABLET", 
+         "ACS_PCT_HH_PC", 
+         "ACS_PCT_HH_OTHER_COMP", 
+         "ACS_PCT_HH_INTERNET", 
+         "ACS_PCT_HH_BROADBAND_ANY", 
+         "ACS_PCT_HH_CELLULAR", 
+         "ACS_PCT_HH_NO_INTERNET", 
+         "ACS_PCT_HH_SAT_INTERNET", 
+         "ACS_PCT_HH_DIAL_INTERNET_ONLY", 
+         "ACS_PCT_ADMIN", 
+         "ACS_PCT_ART", 
+         "ACS_PCT_CONSTRUCT", 
+         "ACS_PCT_EDUC", 
+         "ACS_PCT_FINANCE", 
+         "ACS_PCT_GOVT", 
+         "ACS_PCT_INFORM", 
+         "ACS_PCT_MANUFACT", 
+         "ACS_PCT_NATURE", 
+         "ACS_PCT_OTHER", 
+         "ACS_PCT_PROFESS", 
+         "ACS_PCT_PVT_NONPROFIT", 
+         "ACS_PCT_RETAIL", 
+         "ACS_PCT_TRANSPORT", 
+         "ACS_PCT_WHOLESALE", 
+         "ACS_PCT_EMPLOYED", 
+         "ACS_PCT_UNEMPLOY", 
+         "ACS_GINI_INDEX", 
+         "ACS_PCT_HH_INC_10000", 
+         "ACS_PCT_HH_INC_100000", 
+         "ACS_PCT_HH_INC_14999", 
+         "ACS_PCT_HH_INC_24999", 
+         "ACS_PCT_HH_INC_49999", 
+         "ACS_PCT_HH_INC_99999", 
+         "ACS_PER_CAPITA_INC", 
+         "ACS_MEDIAN_HOME_VALUE", 
+         "ACS_MEDIAN_RENT", 
+         "ACS_PCT_VACANT_HU", 
+         "ACS_PCT_COMMT_15MIN", 
+         "ACS_PCT_COMMT_29MIN", 
+         "ACS_PCT_COMMT_59MIN", 
+         "ACS_PCT_COMMT_60MINUP", 
+         "ACS_PCT_PUBL_TRANSIT", 
+         "ACS_PCT_MEDICAID_ANY", 
+         "ACS_PCT_MEDICARE_ONLY", 
+         "AHRF_ADV_NURSES_RATE", 
+         "AHRF_CLIN_NURSE_SPEC_RATE", 
+         "AHRF_DENTISTS_RATE", 
+         "AHRF_NURSE_ANESTH_RATE", 
+         "AHRF_NURSE_MIDWIVES_RATE", 
+         "AHRF_NURSE_PRACT_RATE", 
+         "AHRF_PHYSICIAN_ASSIST_RATE", 
+         "AMFAR_SSP_RATE", 
+         "AMFAR_MEDSAFAC_RATE",
+         "AMFAR_MHFAC_RATE",
+         "CEN_AREALAND_SQM_COUNTY",
+         "CEN_POPDENSITY_COUNTY",
+         "NEPHTN_HEATIND_90", 
+         "EPAA_2NDMAX_CO_1HR",
+         "EPAA_98PR_NO2_1HR",
+         "EPAA_MAX_PB_3MON",
+         "EPAA_98PR_PM25_DAILY",
+         "EPAA_99PR_SO2_1HR", 
+         "SAIPE_MEDIAN_HH_INCOME",
+         "SAIPE_PCT_POV",
+         "LTC_AVG_OBS_REHOSP_RATE",
+         "LTC_AVG_OBS_SUCCESSFUL_DISC_RATE",
+         "MGV_PER_CAPITA_STD_IP",
+         "MGV_PER_CAPITA_STD_OP",
+         "MGV_PER_CAPITA_STD_EM",
+         "MGV_PER_CAPITA_STD_PA",
+         "MGV_PER_CAPITA_STD_HC", 
+         "POS_MEDIAN_DIST_ED", 
+         "POS_MEDIAN_DIST_MEDSURG_ICU",
+         "POS_MEDIAN_DIST_TRAUMA",
+         "POS_MEDIAN_DIST_PED_ICU", 
+         "POS_MEDIAN_DIST_OBSTETRICS",
+         "POS_MEDIAN_DIST_CLINIC", 
+         "POS_MEDIAN_DIST_ALC", 
   ) %>% 
   mutate(percent_grandparents_as_guardians = ACS_PCT_CHILDREN_GRANDPARENT * ((ACS_PCT_GRANDP_RESPS_P + ACS_PCT_GRANDP_RESPS_NO_P)/100)) %>% 
   select(-ACS_PCT_GRANDP_RESPS_P, -ACS_PCT_GRANDP_RESPS_NO_P, -ACS_PCT_CHILDREN_GRANDPARENT) %>% 
@@ -105,7 +206,7 @@ sdoh_data <- sdoh_data %>%
          "pct_hh_inc_14,999" = "ACS_PCT_HH_INC_14999",
          "pct_hh_inc_24,999" = "ACS_PCT_HH_INC_24999",
          "pct_hh_inc_49,999" = "ACS_PCT_HH_INC_49999",
-         "pct_hh_inc_99999" = "ACS_PCT_HH_INC_99999",
+         "pct_hh_inc_99999" = "ACS_PCT_HH_INC_99999",                         # renamed by mg
          "per_capita_income" = "ACS_PER_CAPITA_INC",
          "median_home_value" = "ACS_MEDIAN_HOME_VALUE",
          "median_rent" = "ACS_MEDIAN_RENT",
@@ -156,12 +257,72 @@ sdoh_data <- sdoh_data %>%
   mutate(fips_code = as.numeric(fips_code))
 ```
 
-```{r chr feature cleaning 1}
+```{r chr feature cleaning 1: su}
 # remove unwanted features
 # convert principal care providers from per 100,000 people to per 1,000 people to match other data
 
-chr_data <- chr_data %>%
-  select("fipscode","v002_rawvalue","v042_rawvalue","v037_rawvalue", "v009_rawvalue","v011_rawvalue","v133_rawvalue","v070_rawvalue","v132_rawvalue",  "v049_rawvalue", "v014_rawvalue", "v085_rawvalue", "v062_rawvalue", "v050_rawvalue", "v155_rawvalue", "v168_rawvalue", "v069_rawvalue", "v023_rawvalue", "v024_rawvalue", "v044_rawvalue", "v140_rawvalue", "v135_rawvalue", "v125_rawvalue", "v124_rawvalue", "v136_other_data_1", "v136_other_data_2", "v136_other_data_3", "v137_rawvalue", "v147_rawvalue", "v127_rawvalue", "v128_rawvalue", "v129_rawvalue", "v144_rawvalue", "v061_rawvalue", "v139_rawvalue", "v138_rawvalue", "v143_rawvalue", "v021_rawvalue", "v149_rawvalue", "v159_rawvalue", "v160_rawvalue", "v167_rawvalue", "v169_rawvalue", "v151_rawvalue", "v063_rawvalue", "v170_rawvalue", "v065_rawvalue", "v141_rawvalue", "v171_rawvalue", "v015_rawvalue", "v161_rawvalue", "v148_rawvalue", "v158_rawvalue", "v177_rawvalue", "v156_rawvalue", "v153_numerator", "v052_rawvalue", "v053_rawvalue", "v058_rawvalue", "v004_rawvalue", "v005_rawvalue"
+chr_data <- all_chr_data %>%
+  select("fipscode",
+         "v002_rawvalue",
+         "v042_rawvalue",
+         "v037_rawvalue",
+         "v009_rawvalue",
+         "v011_rawvalue",
+         "v133_rawvalue",
+         "v070_rawvalue",
+         "v132_rawvalue",  
+         "v049_rawvalue", 
+         "v014_rawvalue", 
+         "v085_rawvalue", 
+         "v062_rawvalue",
+         "v050_rawvalue",
+         "v155_rawvalue", 
+         "v168_rawvalue", 
+         "v069_rawvalue", 
+         "v023_rawvalue", 
+         "v024_rawvalue", 
+         "v044_rawvalue", 
+         "v140_rawvalue",
+         "v135_rawvalue",
+         "v125_rawvalue",
+         "v124_rawvalue",
+         "v136_other_data_1",
+         "v136_other_data_2",
+         "v136_other_data_3",
+         "v137_rawvalue",
+         "v147_rawvalue",
+         "v127_rawvalue",
+         "v128_rawvalue",
+         "v129_rawvalue",
+         "v144_rawvalue",
+         "v061_rawvalue",
+         "v139_rawvalue",
+         "v138_rawvalue",
+         "v143_rawvalue", 
+         "v021_rawvalue",
+         "v149_rawvalue", 
+         "v159_rawvalue", 
+         "v160_rawvalue",
+         "v167_rawvalue", 
+         "v169_rawvalue", 
+         "v151_rawvalue", 
+         "v063_rawvalue",
+         "v170_rawvalue",
+         "v065_rawvalue",
+         "v141_rawvalue",
+         "v171_rawvalue", 
+         "v015_rawvalue", 
+         "v161_rawvalue", 
+         "v148_rawvalue", 
+         "v158_rawvalue", 
+         "v177_rawvalue", 
+         "v156_rawvalue",
+         "v153_numerator", 
+         "v052_rawvalue", 
+         "v053_rawvalue", 
+         "v058_rawvalue", 
+         "v004_rawvalue", 
+         "v005_rawvalue"
   ) %>% 
   mutate(pcp_pt = v004_rawvalue/100) %>% 
   select(-v004_rawvalue) %>% 
@@ -178,7 +339,7 @@ chr_data <- chr_data %>%
          "inequality_ratio" = "v044_rawvalue",
          "social_clubs_per_10k" = "v140_rawvalue",
          "air_polution_metric" =  "v125_rawvalue",
-         "water_quality" = "v124_rawvalue",
+         "water_quality" = "v124_rawvalue",                          # renamed by mg
          "pct_high_housing_costs" = "v136_other_data_1",
          "pct_overcrowded_hh" = "v136_other_data_2",
          "pct_no_kitchen_or_plumbinmg" = "v136_other_data_3",
@@ -228,7 +389,14 @@ chr_data <- chr_data %>%
          "pct_30_min_plus_commute"  = "v137_rawvalue")
 ```
 
-```{r qol dataset create and clean}
+```{r removing big datasets: mg}
+rm(all_chr_data)
+rm(all_sdoh_data)
+```
+
+*Combine datasets*
+
+```{r qol dataset create and clean: su}
 # Create and clean the qol_data dataset
 qol_data <- sdoh_data %>%
   inner_join(chr_data, by = "fips_code") %>%
@@ -239,7 +407,9 @@ qol_data <- sdoh_data %>%
 
 ```
 
-```{r understand na distribution}
+*Features with NA's*
+
+```{r understand na distribution: su}
 # sum of NAs in each column
 na_counts <- colSums(is.na(qol_data))
 
@@ -262,7 +432,7 @@ print(na_counts_df)
 # medicare_inpatient_payment, medicare_outpatient_payment, medicare_e&m_payment, medicare_acute_care_payment, medicare_fqrc/rhc_payment, pct_elderly_mmmograms, pct_flu_vaccines_billed, pct_insufficieficient_sleep, women_to_man_pay_ratio 
 ```
 
-```{r remove high na qol features}
+```{r remove high na qol features: su}
 qol_data <- qol_data %>% 
   select(
     -hourly_living_wage, 
@@ -320,7 +490,9 @@ qol_data <- qol_data %>%
   na.omit()
 ```
 
-```{r qol correlation}
+*Correlation*
+
+```{r qol correlation: su}
 # find predictors with high correlation to shrink the model
 
 # subset qol_data to include only numeric variables
@@ -354,12 +526,9 @@ high_cor_pairs <- high_cor_pairs[!duplicated(t(apply(high_cor_pairs, 1, sort))),
 print(high_cor_pairs)
 
 # Remove predictors with large correlation value (|0.7|) or greater with multi-colinearity and low relevance.
-
-
-
 ```
 
-```{r correlation removal}
+```{r correlation removal: su}
 qol_data <- qol_data %>%
   select(-adv_practice_nurse_pt,
          -pct_0_17_age,
@@ -391,7 +560,9 @@ qol_data <- qol_data %>%
   )
 ```
 
-```{r find values with nzr}
+*Near zero variance*
+
+```{r find values with nzr: su}
 # identify predictors with near-zero variance (high collinearity)
 nzv <- nearZeroVar(qol_numeric, saveMetrics = TRUE)
 
@@ -400,14 +571,16 @@ nzv <- nzv[nzv$nzv == TRUE, ]
 print(nzv)
 ```
 
-```{r nzr removal}
+```{r nzr removal: su}
 # remove features with near zero variance
 qol_data <- qol_data %>%
   select(-syringe_exchange_pt
   )
 ```
 
-```{r low interest feature removal}
+*Features with low interest*
+
+```{r low interest feature removal: su}
 # per group discussion, remove low interest features from model
 qol_data <- qol_data %>%
   select(-pct_adult_citizens,
@@ -439,14 +612,15 @@ qol_data <- qol_data %>%
          -land_area_sqm,
          -median_surgery_dist,
          -median_obstetrics_dist,
-         -pct_obese_adults,
          -pct_some_college,
          -pct_no_kitchen_or_plumbinmg,
          -pct_income_to_childcare,
   )
 ```
 
-```{r identify vif}
+*Variance inflation features*
+
+```{r identify vif: su}
 qol_numeric <- qol_data %>% 
   select(-state,
          -county,
@@ -459,14 +633,16 @@ high_vif
 # no further feature removal needed at this point
 ```
 
-```{r qol regsubsets selection}
+*Subset regression viability check*
+
+```{r qol regsubsets selection: su}
 # identify best model for response with regsubset, tests for linear models 
 qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
                              really.big = TRUE,
                              nvmax = 45)
 ```
 
-```{r identifying ideal # of variables}
+```{r identifying ideal # of variables: su}
 reg_fit_summary <- summary(qol_regfit_full)
 
 # identifying ideal number of variables for each metric
@@ -476,7 +652,7 @@ which.min(reg_fit_summary$cp)       # penalizes models with more predictors with
 which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
 ```
 
-```{r visualize regsubset data}
+```{r visualize regsubset data: su}
 # create plots of each metric to visualize 
 
 par(mfrow = c(2,2))
@@ -508,13 +684,46 @@ points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
 
 
 $$Data Exploration$$
-```{r inspect qol}
+
+*Understanding response*
+
+```{r poor to fair health distribution: su}
+ggplot(qol_data,
+       mapping = aes(x = '', y = pct_poor_to_fair_health)) +
+  geom_boxplot(outlier.colour = 'red') +
+  geom_jitter(alpha = 0.3, size = 0.2) +
+  theme_minimal() +
+  labs(x = "",
+       y = "",
+       title = "Percent Self Reporting Poor to Fair Health") +
+  scale_y_continuous(labels = percent_format(scale = 100))
+
+# with the presence of outliers having high percent self reporting and a lower limit that is not able to be less tha, will use the 
+```
+
+```{r update result output: su}
+# identify new median
+median_result <- median(qol_data$pct_poor_to_fair_health)
+
+qol_data <- qol_data %>%
+  mutate(response = ifelse(pct_poor_to_fair_health >= median_result, "worse", "better")) %>%
+  mutate(response = as.factor(response))
+
+# United States self reported poor to fair health is 12% per chr data. However, the median value of this result is 15.4% for included observations (not weighted)
+```
+
+*Data overview*
+
+```{r inspect qol: su}
 # inspect dataset structure and summary
+glimpse(qol_data)
 str(qol_data)
 summary(qol_data)
 ```
 
-```{r group by state}
+*Create groups of interest*
+
+```{r group by state: su}
 # qol dataset grouped by median values
 qol_state_median <- qol_data %>%
   group_by(state) %>%
@@ -526,7 +735,9 @@ qol_state_mean <- qol_data %>%
   summarize(across(where(is.numeric), mean, na.rm = TRUE))
 ```
 
-```{r state median response}
+*Explore state distributions*
+
+```{r state median response: su}
 # reorder states by median pct_poor_to_fair_health
 qol_state_median <- qol_state_median %>%
   mutate(state = fct_reorder(state, pct_poor_to_fair_health, .desc = TRUE))
@@ -544,7 +755,7 @@ ggplot(data = qol_state_median,
 
 ```
 
-```{r state median response}
+```{r state median response: su}
 # reorder states by median life expectancy
 qol_state_median <- qol_state_median %>%
   mutate(state = fct_reorder(state, life_expectancy_years, .desc = FALSE))
@@ -561,7 +772,13 @@ ggplot(data = qol_state_median,
 
 ```
 
-```{r top and bottom response in county}
+*County response distribution*
+
+```{r top and bottom response in county: su}
+# Remove rows with missing values in pct_poor_to_fair_health
+#qol_data_clean <- qol_data %>%
+#  filter(!is.na(pct_poor_to_fair_health))
+
 # Arrange qol_data by pct_poor_to_fair_health
 qol_data_sorted <- qol_data %>%
   arrange(pct_poor_to_fair_health)
@@ -581,8 +798,18 @@ ggplot(top_bottom_counties, aes(x = reorder(paste(county, state, sep = ", "), pc
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 ```
+```{r respinse histogram: su}
+ggplot(data = qol_data,
+       mapping = aes(x = pct_poor_to_fair_health)) +
+  geom_histogram(binwidth = 0.008) +
+  scale_x_continuous(labels = percent_format(scale = 100)) +
+  labs(x = "Percent Bad Health",
+       y = "Count",
+       title = "Histogram of Self Reporting Poor to Fair Health") +
+  theme_minimal()
+```
 
-```{r % poor to fair vs % voting}
+```{r % poor to fair vs % voting: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
 ggplot(data = qol_data,
        aes(x = pct_voters, y = pct_poor_to_fair_health)) +
@@ -595,7 +822,7 @@ ggplot(data = qol_data,
        y = "Percent Reporting Poor to Fair Health")
 ```
 
-```{r % poor to fair vs school funding gap}
+```{r % poor to fair vs school funding gap: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
 ggplot(data = qol_data,
        aes(x = school_funding_gap, y = pct_poor_to_fair_health)) +
@@ -608,7 +835,7 @@ ggplot(data = qol_data,
        y = "Percent Reporting Poor to Fair Health")
 ```
 
-```{r % poor to fair vs years of life}
+```{r % poor to fair vs years of life: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
 ggplot(data = qol_data,
        aes(x = pct_poor_to_fair_health, y = life_expectancy_years)) +
@@ -620,11 +847,140 @@ ggplot(data = qol_data,
        y = "Life Expetancy, Years")
 ```
 
+```{r community feature vd response: uo}
+# Comparing important features from the "community aspect domain" of SDOH with the response variable "Percentage of adults reporting poor to fair health per county
+
+# Create a list of features
+features <- c("pct_single_parent", "percent_grandparents_as_guardians", 
+              "pct_adult_smokers", "pct_obese_adults", "pct_binge_drinkers", 
+              "social_clubs_per_10k", "pct_overcrowded_hh", "average_hh_size" )
+
+# Create a plot for each feature
+for (feature in features) {
+  print(
+    ggplot(qol_data, aes_string(x = feature, y = "pct_poor_to_fair_health")) +
+      geom_point(color = "steelblue") +
+      geom_smooth(method = "lm", se = FALSE, color = "red") +
+      labs(title = paste("Scatter Plot of", feature, "Vs 'Poor_To_Fair_Health' Reported Per County"),
+           subtitle = "data from www.ahrq.gov and www.countyhealthrankings.org ",
+           x = feature,
+           y = "Percentage of Poor to Fair Health")
+  )
+}
 
 
 
+```
 
+```{r race relation to response: uo}
+# Create a list of race variables
+race_vars <- c("pct_native_american", "pct_asian", "pct_black", "pct_hispanic", "pct_other_race", "pct_white")
 
+# Reshape data for faceting
+qol_data_long <- qol_data %>%
+  pivot_longer(cols = race_vars, names_to = "race", values_to = "percentage")
+
+# Create faceted plot
+ggplot(qol_data_long, aes(x = percentage, y = pct_poor_to_fair_health)) +
+  geom_point(color = "steelblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  facet_wrap(~race, scales = "free_x") +
+  labs(title = "Effect of Race on Report of Poor_to_Fair Health in US Counties",
+       x = "Percentage of Race",
+       y = "Percentage of Poor to Fair Health")
+```
+
+```{r making new dataset for Miranda's data: mg}
+data_mg <- qol_data %>%
+  select("pct_hh_inc_99999", "pct_employed", "inequality_ratio", "pct_high_housing_costs", "pct_30_min_plus_commute", "pct_hh_other_computer", "pct_hh_internet", "median_hh_income.x", "pct_highschool_diploma", "school_funding_gap", "population_density", "days_over_90_f", "air_polution_metric", "water_quality", "pct_poor_to_fair_health")
+
+data_mg <- na.omit(data_mg)
+
+summary(data_mg)
+```
+
+```{r matrix for mg summary stats in case needed: mg}
+variables <- c(
+  "pct_hh_inc_99999",
+  "pct_employed",
+  "inequality_ratio",
+  "pct_high_housing_costs",
+  "pct_30_min_plus_commute",
+  "pct_hh_other_computer",
+  "pct_hh_internet",
+  "median_hh_income.x",
+  "pct_highschool_diploma",
+  "school_funding_gap",
+  "population_density",
+  "days_over_90_f",
+  "air_polution_metric",
+  "water_quality",
+  "pct_poor_to_fair_health"
+)
+
+mg_sum_stats <- function(data, vars) {
+  summary_stats <- data %>%
+    select(all_of(vars)) %>%
+    summarise(across(everything(), list(
+      mean = ~mean(. , na.rm = TRUE),
+      median = ~median(. , na.rm = TRUE),
+      sd = ~sd(. , na.rm = TRUE),
+      min = ~min(. , na.rm = TRUE),
+      max = ~max(. , na.rm = TRUE)
+    )))
+  return(summary_stats)
+}
+
+summary_stats <- mg_sum_stats(data_mg, variables)
+
+summary_matrix <- matrix(ncol = length(variables), nrow = 5)
+colnames(summary_matrix) <- variables
+rownames(summary_matrix) <- c("Mean", "Median", "sd", "Min", "Max")
+
+for (i in 1:length(variables)) {
+  summary_matrix[1, i] <- summary_stats[[paste0(variables[i], "_mean")]]
+  summary_matrix[2, i] <- summary_stats[[paste0(variables[i], "_median")]]
+  summary_matrix[3, i] <- summary_stats[[paste0(variables[i], "_sd")]]
+  summary_matrix[4, i] <- summary_stats[[paste0(variables[i], "_min")]]
+  summary_matrix[5, i] <- summary_stats[[paste0(variables[i], "_max")]]
+}
+
+mg_summary_matrix <- round(summary_matrix, 3)
+print(mg_summary_matrix)
+```
+
+```{r comparing scatterplots: mg}
+data_mg_part1 <- data_mg %>%
+  select("pct_hh_inc_99999", "pct_employed", "inequality_ratio", "pct_high_housing_costs", "pct_30_min_plus_commute", "pct_hh_other_computer", "pct_hh_internet", "pct_poor_to_fair_health")
+
+data_mg_part2 <- data_mg %>%
+  select("median_hh_income.x", "pct_highschool_diploma", "school_funding_gap", "population_density", "days_over_90_f", "air_polution_metric", "water_quality", "pct_poor_to_fair_health")
+
+pairs(data_mg_part1, main = "Pairwise Scatterplots of Variables (Part 1)")
+
+pairs(data_mg_part2, main = "Pairwise Scatterplots of Variables (Part 2)")
+```
+
+```{r Scatterplot of Percentage of Poor to Fair Health vs. Median Household Income: mg}
+ggplot(data_mg, aes(x = pct_poor_to_fair_health, y = median_hh_income.x)) +
+  geom_point() +
+    geom_smooth(method = "lm", col = "red") +
+  labs(title = "Scatterplot of Percentage of Poor to Fair Health vs. Median Household Income",
+       x = "Percentage of Poor to Fair Health (Higher number is worse)",
+       y = "Median Household Income") +
+  theme_minimal()
+
+```
+
+```{r scatterplot of percentage of poor to fair health vs school funding gap: mg}
+ggplot(data_mg, aes(x = school_funding_gap, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  labs(title = "Scatterplot of Percentage of Poor to Fair Health vs. School Funding Gap",
+       x = "School Funding Gap",
+       y = "Percentage of Poor to Fair Health") +
+  theme_minimal()
+```
 
 
 
