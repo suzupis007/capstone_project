@@ -685,7 +685,7 @@ points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
 
 $$Data Exploration$$
 
-*Understanding response*
+*Updating response*
 
 ```{r poor to fair health distribution: su}
 ggplot(qol_data,
@@ -798,7 +798,8 @@ ggplot(top_bottom_counties, aes(x = reorder(paste(county, state, sep = ", "), pc
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 ```
-```{r respinse histogram: su}
+
+```{r response histogram: su}
 ggplot(data = qol_data,
        mapping = aes(x = pct_poor_to_fair_health)) +
   geom_histogram(binwidth = 0.008) +
@@ -808,6 +809,8 @@ ggplot(data = qol_data,
        title = "Histogram of Self Reporting Poor to Fair Health") +
   theme_minimal()
 ```
+
+*Exploring points of interest*
 
 ```{r % poor to fair vs % voting: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
@@ -846,6 +849,8 @@ ggplot(data = qol_data,
        x = "Percent Poor to Fair Health", 
        y = "Life Expetancy, Years")
 ```
+
+*Exploring community features*
 
 ```{r community feature vd response: uo}
 # Comparing important features from the "community aspect domain" of SDOH with the response variable "Percentage of adults reporting poor to fair health per county
@@ -889,6 +894,8 @@ ggplot(qol_data_long, aes(x = percentage, y = pct_poor_to_fair_health)) +
        x = "Percentage of Race",
        y = "Percentage of Poor to Fair Health")
 ```
+
+*Exploring education, economic, and local enviroment features*
 
 ```{r making new dataset for Miranda's data: mg}
 data_mg <- qol_data %>%
