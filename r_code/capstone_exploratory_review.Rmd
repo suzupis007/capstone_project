@@ -30,6 +30,7 @@ library(forcats)       # ordering data frames
 library(codebookr)     # adding appendix to r code
 library(gtsummary)     # creating tables
 library(cardx)         # to include statistic results
+library(moments)       # to calculate skewness and kurtosis
 ```
 
 *Data load*
@@ -514,7 +515,7 @@ cor_matrix <- cor(qol_numeric)
 corrplot(cor_matrix, method = "circle") # data too dense to visualize
 
 # find the indices of correlations greater than 0.7
-high_cor_indices <- which(abs(cor_matrix) > 0.7, arr.ind = TRUE)
+high_cor_indices <- which(abs(cor_matrix) > 0.7, arr.ind = TRUE) # 0.8 is more commonly accepted, also run regression andview variance inflation factors with logistic regression
 
 # extract the pairs of variables with correlation greater than 0.7
 high_cor_pairs <- data.frame(
@@ -624,12 +625,20 @@ qol_data <- qol_data %>%
 
 *Variance inflation features*
 
+```{r}
+# run a pca (DO this with 0, 1) or lda (prefered) on numeric data
+```
+
+
 ```{r identify vif: su}
 qol_numeric <- qol_data %>% 
   select(-state,
          -county,
          -region,
-         -life_expectancy_years,)
+         -life_expectancy_years,
+         -fips_code)
+
+
 
 vif_values <- vif(lm(response ~ ., data = qol_numeric))
 high_vif <- names(vif_values[vif_values > 5])
@@ -641,49 +650,49 @@ high_vif
 
 ```{r qol regsubsets selection: su}
 # identify best model for response with regsubset, tests for linear models 
-#qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
-#                             really.big = TRUE,
-#                             nvmax = 45)
+qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
+                             really.big = TRUE,
+                             nvmax = 45)
 ```
 
 ```{r identifying ideal # of variables: su}
-#reg_fit_summary <- summary(qol_regfit_full)
+reg_fit_summary <- summary(qol_regfit_full)
 
 # identifying ideal number of variables for each metric
-#which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
-#which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
-#which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
-#which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
+which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
+which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
+which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
+which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
 ```
 
 ```{r visualize regsubset data: su}
 # create plots of each metric to visualize 
 
-#par(mfrow = c(2,2))
+par(mfrow = c(2,2))
 
-#plot(reg_fit_summary$rss,
-#     xlab="Number of Variables",
-#     ylab="RSS",
-#     type="l")
-#points(45, reg_fit_summary$rss[45], col="red",cex=1.5,pch =20)
+plot(reg_fit_summary$rss,
+     xlab="Number of Variables",
+     ylab="RSS",
+     type="l")
+points(45, reg_fit_summary$rss[45], col="red",cex=1.5,pch =20)
 
-#plot(reg_fit_summary$adjr2,
-#     xlab = "Number of Variables",
-#     ylab = "Adjusted R-squared",
-#     type = "l")
-#points(30, reg_fit_summary$adjr2[30], col="red",cex=1.5,pch =20)
+plot(reg_fit_summary$adjr2,
+     xlab = "Number of Variables",
+     ylab = "Adjusted R-squared",
+     type = "l")
+points(30, reg_fit_summary$adjr2[30], col="red",cex=1.5,pch =20)
 
-#plot(reg_fit_summary$cp,
-#     xlab = "Number of Variables",
-#     ylab = "Cp",
-#     type = "l")
-#points(27, reg_fit_summary$cp[27], col="red",cex=1.5,pch =20)
+plot(reg_fit_summary$cp,
+     xlab = "Number of Variables",
+     ylab = "Cp",
+     type = "l")
+points(27, reg_fit_summary$cp[27], col="red",cex=1.5,pch =20)
 
-#plot(reg_fit_summary$bic,
-#     xlab = "Number of Variables",
-#     ylab = "BIC",
-#     type = "l")
-#points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
+plot(reg_fit_summary$bic,
+     xlab = "Number of Variables",
+     ylab = "BIC",
+     type = "l")
+points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
 ```
 
 
@@ -700,7 +709,8 @@ ggplot(qol_data,
   labs(x = "",
        y = "",
        title = "Percent Self Reporting Poor to Fair Health") +
-  scale_y_continuous(labels = percent_format(scale = 100))
+  scale_y_continuous(labels = percent_format(scale = 100)) +
+  geom_hline(yintercept = 0.12, color = "blue")
 
 # with the presence of outliers having high percent self reporting and a lower limit that is not able to be less tha, will use the 
 ```
@@ -1046,32 +1056,96 @@ qol_data_other <- qol_data_long %>%
 
 ```
 
-```{r}
-table_1_summaies <- data.frame()
+```{r function creation attempts}
+df_race_list <- c("asian", "black", "hispanic", "native_american", "other", "white")
 
-summary(qol_data_na$pct_poor_to_fair_health)
+feature_list <- c("pct_poor_to_fair_health", "life_expectancy_years", "voting")
 
-summary(qol_data_asian$pct_poor_to_fair_health)
+race_stats_calc <- function(data, race_list, feature_list) {
 
-summary(qol_data_black$pct_poor_to_fair_health)
+  results <- list()
+  
+  for (race in race_list) {
+    filtered_data <- data %>%
+      filter(race == !!race)
+    
+    stats <- filtered_data %>%
+      summarise(across(all_of(feature_list), list(
+        Mean = ~mean(.),
+        Median = ~median(.),
+        SD = ~sd(.),
+        Kurtosis = ~kurtosis(.),
+        Skewness = ~skewness(.)
+      ), .names = "{fn}_{col}"))
+    
+    results[[race]] <- stats
+  }
+  
+  combined_results <- bind_rows(results, .id = "race")
+  
+  return(combined_results)
+}
 
-summary(qol_data_hispanic$pct_poor_to_fair_health)
 
-summary(qol_data_white$pct_poor_to_fair_health)
+```
 
-summary(qol_data_other$pct_poor_to_fair_health)
+```{r run function}
+st <- race_stats_calc(data = qol_data_long,
+                      race = df_race_list,
+                      feature = feature_list)
+
+st
+```
+
+```{r function creation attempts 2}
+# create function
+race_stats_calc <- function(data, race_list, feature_list) {
+  summary_stats <- data %>%
+    filter(race %in% race_list) %>%
+    group_by(race) %>%
+    summarise(across(all_of(feature_list), list(
+      Mean = ~mean(.),
+      Median = ~median(.),
+      SD = ~sd(.),
+      Kurtosis = ~kurtosis(.),
+      Skewness = ~skewness(.)
+    ), .names = "{fn}_{col}"))
+  
+  return(summary_stats)
+}
+
+```
+
+```{r run function 2}
+st <- race_stats_calc(data = qol_data_long,
+                      race = df_race_list,
+                      feature = feature_list)
+
+st
 ```
 
 
-```{r table trial: su}
-trial <- trial
+```{r filter data by race}
 
-# summarize the data with our package
-table1 <-
-  trial |> 
-  tbl_summary(include = c(age, grade, response))
+qol_data_na <- qol_data_na %>% 
+  mutate(pct_poor_to_fair_health = pct_poor_to_fair_health * percentage)
 
-table1
+
+native_american <- summary(qol_data_na$pct_voters)
+asian <- summary(qol_data_asian$pct_voters)
+black <- summary(qol_data_black$pct_voters)
+hispanic <- summary(qol_data_hispanic$pct_voters)
+white <- summary(qol_data_white$pct_voters)
+other <- summary(qol_data_other$pct_voters)
+
+
+
+print(native_american)
+print(black)
+print(hispanic)
+print(asian)
+print(white)
+print(other)
 ```
 
 ```{r table 1:su}
@@ -1122,16 +1196,16 @@ unique(qol_data_long$race)
 ```
 
 
+
+
 ```{r}
-
-
 # Assuming qol_data_long is now the correctly reshaped dataset
 test_table <- tbl_summary(
   data = qol_data_long,
   include = c(pct_poor_to_fair_health, life_expectancy_years, pct_voters),
   by = race,
   statistic = list(
-    all_continuous() ~ "{mean} ({sd})",
+    all_continuous() ~ "{mean} ({sd}, {kurtosis}, {skewness})",
     all_dichotomous() ~ "{p}%"
   ),
   missing = "no"
@@ -1139,8 +1213,6 @@ test_table <- tbl_summary(
 
 # Print the summary table
 test_table
-
-
 ```
 
 
@@ -1194,7 +1266,7 @@ test_table <- tbl_summary(
   include = c(pct_poor_to_fair_health, life_expectancy_years, pct_voters),
   by = region,
   statistic = list(
-    all_continuous() ~ "{median} ({sd})",
+    all_continuous() ~ "{mean} ({sd}, {kurtosis}, {skewness})",
     all_dichotomous() ~ "{p}%"
   ),
   missing = "no"
