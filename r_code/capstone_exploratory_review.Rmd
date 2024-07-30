@@ -31,6 +31,7 @@ library(codebookr)     # adding appendix to r code
 library(gtsummary)     # creating tables
 library(cardx)         # to include statistic results
 library(moments)       # to calculate skewness and kurtosis
+library(tigris)
 ```
 
 *Data load*
@@ -768,7 +769,7 @@ ggplot(data = qol_state_median,
 
 ```
 
-```{r state median response: su}
+```{r state median response 1: su}
 # reorder states by median life expectancy
 qol_state_median <- qol_state_median %>%
   mutate(state = fct_reorder(state, life_expectancy_years, .desc = FALSE))
@@ -825,7 +826,7 @@ ggplot(data = qol_data,
 
 *Exploring points of interest*
 
-```{r % poor to fair vs % voting: su}
+```{r per cent poor to fair vs per cent voting: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
 ggplot(data = qol_data,
        aes(x = pct_voters, y = pct_poor_to_fair_health)) +
@@ -838,7 +839,7 @@ ggplot(data = qol_data,
        y = "Percent Reporting Poor to Fair Health")
 ```
 
-```{r % poor to fair vs school funding gap: su}
+```{r per cent poor to fair vs school funding gap: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
 ggplot(data = qol_data,
        aes(x = school_funding_gap, y = pct_poor_to_fair_health)) +
@@ -851,7 +852,7 @@ ggplot(data = qol_data,
        y = "Percent Reporting Poor to Fair Health")
 ```
 
-```{r % poor to fair vs years of life: su}
+```{r per cent poor to fair vs years of life: su}
 # Create the scatter plot with x-axis limit, percentage formatting, and state labels
 ggplot(data = qol_data,
        aes(x = pct_poor_to_fair_health, y = life_expectancy_years)) +
@@ -890,6 +891,45 @@ for (feature in features) {
 
 ```
 
+Exploring the relationship between median household income and health status in US counties along geographical lines by creating heat maps. UO
+
+```{r}
+
+# Load US counties shapefile
+counties <- counties(cb = TRUE)
+
+# Ensure fips_code is a character
+qol_data$fips_code <- as.character(qol_data$fips_code)
+
+# Merge shapefile with qol_data
+counties <- counties %>%
+  left_join(qol_data, by = c("GEOID" = "fips_code"))
+
+# Set plot size
+options(repr.plot.width = 10, repr.plot.height = 8)
+
+# Create map for Percentage of Poor to Fair Health
+ggplot(data = counties) +
+  geom_sf(aes(fill = pct_poor_to_fair_health), color = NA) +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(title = "Percentage of Poor to Fair Health by County",
+       fill = "Pct Poor to Fair Health") +
+  coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
+  theme_minimal()
+
+# Create map for Median Household income
+ggplot(data = counties) +
+  geom_sf(aes(fill = median_hh_income.x), color = NA) +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(title = "Median Household Income by County",
+       fill = "Median Household Income") +
+  coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
+  theme_minimal()
+
+```
+
+
+
 ```{r race relation to response: uo}
 # Create a list of race variables
 race_vars <- c("pct_native_american", "pct_asian", "pct_black", "pct_hispanic", "pct_other_race", "pct_white")
@@ -923,7 +963,7 @@ ggplot(qol_data_long, aes(x = percentage, y = pct_poor_to_fair_health)) +
 
 *Exploring education, economic, and local enviroment features*
 
-```{r making new dataset for Miranda's data: mg}
+```{r making new dataset for Mirandas data: mg}
 data_mg <- qol_data %>%
   select("pct_hh_inc_99999", "pct_employed", "inequality_ratio", "pct_high_housing_costs", "pct_30_min_plus_commute", "pct_hh_other_computer", "pct_hh_internet", "median_hh_income.x", "pct_highschool_diploma", "school_funding_gap", "population_density", "days_over_90_f", "air_polution_metric", "water_quality", "pct_poor_to_fair_health")
 
@@ -1015,7 +1055,7 @@ ggplot(data_mg, aes(x = school_funding_gap, y = pct_poor_to_fair_health)) +
   theme_minimal()
 ```
 
-*Taable creation with gtsummary*
+*Table creation with gtsummary*
 
 ```{r race specific data frames}
 # create longer table with race as a column
@@ -1059,7 +1099,7 @@ qol_data_other <- qol_data_long %>%
 ```{r function creation attempts}
 df_race_list <- c("asian", "black", "hispanic", "native_american", "other", "white")
 
-feature_list <- c("pct_poor_to_fair_health", "life_expectancy_years", "voting")
+feature_list <- c("pct_poor_to_fair_health", "life_expectancy_years", "pct_voters")
 
 race_stats_calc <- function(data, race_list, feature_list) {
 
@@ -1089,7 +1129,12 @@ race_stats_calc <- function(data, race_list, feature_list) {
 
 ```
 
+
+
+
 ```{r run function}
+
+
 st <- race_stats_calc(data = qol_data_long,
                       race = df_race_list,
                       feature = feature_list)
