@@ -1,0 +1,748 @@
+---
+title: "Capstone Project Exploratoru Analysis"
+author: "Steve Uzupis"
+date: "2024-07-07"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$$Enviroment Build$$
+
+*Packages Load*
+```{r package load: su}
+# load packages
+
+library(readr)         # load csv files
+library(readxl)        # load excel files
+library(dplyr)         # data manipulation
+library(lubridate)     # date & time manipulation
+library(ggplot2)       # data visualization
+library(tidyr)         # collection of statistical packages, packages loaded individually
+library(corrplot)      # to visualize correlations
+library(leaps)         # for subset selection
+library(caret)         # test for correlation
+library(car)           # for VIF
+library(scales)        # for visualizing plots in %
+library(forcats)       # ordering data frames
+library(codebookr)     # adding appendix to r code
+library(gtsummary)     # creating tables
+library(cardx)         # to include statistic results
+library(moments)       # to calculate skewness and kurtosis
+```
+
+*Data load*
+```{r data load: su}
+# load data
+sdoh_data <- read_csv("data/sdoh_data.csv")
+dim(sdoh_data)
+
+chr_data <- read_csv("data/chr_data.csv", skip = 1)
+dim(chr_data)
+
+# data sets are extremely large, it is determined to remove unwanted features before any analysis
+```
+
+$$Data Cleaning$$
+
+*Initial data cleaning*
+
+```{r sdoh feature cleaning 1: su}
+# remove unwanted features, create calculated feature, convert fips_code to data type matching chr_data
+
+sdoh_data <- sdoh_data %>% 
+  select("COUNTYFIPS", 
+         "STATE", 
+         "COUNTY", 
+         "REGION", 
+         "ACS_TOT_POP_WT", 
+         "ACS_AVG_HH_SIZE", 
+         "ACS_PCT_MALE", 
+         "ACS_PCT_FEMALE", 
+         "ACS_PCT_NON_CITIZEN", 
+         "ACS_PCT_CTZ_NATURALIZED", 
+         "ACS_PCT_CTZ_ABOVE18", 
+         "ACS_PCT_ENGL_NOT_ALL", 
+         "ACS_PCT_AIAN", 
+         "ACS_PCT_ASIAN", 
+         "ACS_PCT_BLACK", 
+         "ACS_PCT_HISPANIC", 
+         "ACS_PCT_OTHER_RACE", 
+         "ACS_PCT_WHITE", 
+         "ACS_PCT_CHILD_1FAM", 
+         "ACS_PCT_CHILDREN_GRANDPARENT", 
+         "ACS_PCT_GRANDP_RESPS_NO_P", 
+         "ACS_PCT_GRANDP_RESPS_P", 
+         "ACS_PCT_HH_NO_COMP_DEV", 
+         "ACS_PCT_HH_SMARTPHONE", 
+         "ACS_PCT_HH_TABLET", 
+         "ACS_PCT_HH_PC", 
+         "ACS_PCT_HH_OTHER_COMP", 
+         "ACS_PCT_HH_INTERNET", 
+         "ACS_PCT_HH_BROADBAND_ANY", 
+         "ACS_PCT_HH_CELLULAR", 
+         "ACS_PCT_HH_NO_INTERNET", 
+         "ACS_PCT_HH_SAT_INTERNET", 
+         "ACS_PCT_HH_DIAL_INTERNET_ONLY", 
+         "ACS_PCT_ADMIN", 
+         "ACS_PCT_ART", 
+         "ACS_PCT_CONSTRUCT", 
+         "ACS_PCT_EDUC", 
+         "ACS_PCT_FINANCE", 
+         "ACS_PCT_GOVT", 
+         "ACS_PCT_INFORM", 
+         "ACS_PCT_MANUFACT", 
+         "ACS_PCT_NATURE", 
+         "ACS_PCT_OTHER", 
+         "ACS_PCT_PROFESS", 
+         "ACS_PCT_PVT_NONPROFIT", 
+         "ACS_PCT_RETAIL", 
+         "ACS_PCT_TRANSPORT", 
+         "ACS_PCT_WHOLESALE", 
+         "ACS_PCT_EMPLOYED", 
+         "ACS_PCT_UNEMPLOY", 
+         "ACS_GINI_INDEX", 
+         "ACS_PCT_HH_INC_10000", 
+         "ACS_PCT_HH_INC_100000", 
+         "ACS_PCT_HH_INC_14999", 
+         "ACS_PCT_HH_INC_24999", 
+         "ACS_PCT_HH_INC_49999", 
+         "ACS_PCT_HH_INC_99999", 
+         "ACS_PER_CAPITA_INC", 
+         "ACS_MEDIAN_HOME_VALUE", 
+         "ACS_MEDIAN_RENT", 
+         "ACS_PCT_VACANT_HU", 
+         "ACS_PCT_COMMT_15MIN", 
+         "ACS_PCT_COMMT_29MIN", 
+         "ACS_PCT_COMMT_59MIN", 
+         "ACS_PCT_COMMT_60MINUP", 
+         "ACS_PCT_PUBL_TRANSIT", 
+         "ACS_PCT_MEDICAID_ANY", 
+         "ACS_PCT_MEDICARE_ONLY", 
+         "AHRF_ADV_NURSES_RATE", 
+         "AHRF_CLIN_NURSE_SPEC_RATE", 
+         "AHRF_DENTISTS_RATE", 
+         "AHRF_NURSE_ANESTH_RATE", 
+         "AHRF_NURSE_MIDWIVES_RATE", 
+         "AHRF_NURSE_PRACT_RATE", 
+         "AHRF_PHYSICIAN_ASSIST_RATE", 
+         "AMFAR_SSP_RATE", 
+         "AMFAR_MEDSAFAC_RATE",
+         "AMFAR_MHFAC_RATE",
+         "CEN_AREALAND_SQM_COUNTY",
+         "CEN_POPDENSITY_COUNTY",
+         "NEPHTN_HEATIND_90", 
+         "EPAA_2NDMAX_CO_1HR",
+         "EPAA_98PR_NO2_1HR",
+         "EPAA_MAX_PB_3MON",
+         "EPAA_98PR_PM25_DAILY",
+         "EPAA_99PR_SO2_1HR", 
+         "SAIPE_MEDIAN_HH_INCOME",
+         "SAIPE_PCT_POV",
+         "LTC_AVG_OBS_REHOSP_RATE",
+         "LTC_AVG_OBS_SUCCESSFUL_DISC_RATE",
+         "MGV_PER_CAPITA_STD_IP",
+         "MGV_PER_CAPITA_STD_OP",
+         "MGV_PER_CAPITA_STD_EM",
+         "MGV_PER_CAPITA_STD_PA",
+         "MGV_PER_CAPITA_STD_HC", 
+         "POS_MEDIAN_DIST_ED", 
+         "POS_MEDIAN_DIST_MEDSURG_ICU",
+         "POS_MEDIAN_DIST_TRAUMA",
+         "POS_MEDIAN_DIST_PED_ICU", 
+         "POS_MEDIAN_DIST_OBSTETRICS",
+         "POS_MEDIAN_DIST_CLINIC", 
+         "POS_MEDIAN_DIST_ALC", 
+  ) %>% 
+  mutate(percent_grandparents_as_guardians = ACS_PCT_CHILDREN_GRANDPARENT * ((ACS_PCT_GRANDP_RESPS_P + ACS_PCT_GRANDP_RESPS_NO_P)/100)) %>% 
+  select(-ACS_PCT_GRANDP_RESPS_P, -ACS_PCT_GRANDP_RESPS_NO_P, -ACS_PCT_CHILDREN_GRANDPARENT) %>% 
+  rename("fips_code" = "COUNTYFIPS",
+         "state" = "STATE",
+         "county" = "COUNTY",
+         "region" = "REGION",
+         "weighted_population"  = "ACS_TOT_POP_WT",
+         "average_hh_size" = "ACS_AVG_HH_SIZE",
+         "pct_male"  = "ACS_PCT_MALE",
+         "pct_female" = "ACS_PCT_FEMALE",
+         "pct_not_citizens" = "ACS_PCT_NON_CITIZEN",
+         "pct_naturalized_citizens" = "ACS_PCT_CTZ_NATURALIZED",
+         "pct_adult_citizens" = "ACS_PCT_CTZ_ABOVE18",
+         "pct_no_english_spoken" = "ACS_PCT_ENGL_NOT_ALL",
+         "pct_native_american" = "ACS_PCT_AIAN",
+         "pct_asian" = "ACS_PCT_ASIAN",
+         "pct_black" = "ACS_PCT_BLACK",
+         "pct_hispanic" = "ACS_PCT_HISPANIC",
+         "pct_other_race" = "ACS_PCT_OTHER_RACE",
+         "pct_white" = "ACS_PCT_WHITE",
+         "pct_single_parent" = "ACS_PCT_CHILD_1FAM",
+         "pct_hh_no_computing_device" = "ACS_PCT_HH_NO_COMP_DEV",
+         "pct_hh_smartphone" = "ACS_PCT_HH_SMARTPHONE",
+         "pct_hh_tablet" = "ACS_PCT_HH_TABLET",
+         "pct_hh_computer" = "ACS_PCT_HH_PC",
+         "pct_hh_other_computer" = "ACS_PCT_HH_OTHER_COMP",
+         "pct_hh_internet" = "ACS_PCT_HH_INTERNET",
+         "pct_hh_broadband" = "ACS_PCT_HH_BROADBAND_ANY",
+         "pct_hh_cell_data" = "ACS_PCT_HH_CELLULAR",
+         "pct_hh_no_internet" = "ACS_PCT_HH_NO_INTERNET",
+         "pct_hh_satellite" =  "ACS_PCT_HH_SAT_INTERNET",
+         "pct_hh_dial_up" = "ACS_PCT_HH_DIAL_INTERNET_ONLY",
+         "pct_employed_admin" = "ACS_PCT_ADMIN",
+         "pct_employed_arts" = "ACS_PCT_ART", 
+         "pct_employed_construction" = "ACS_PCT_CONSTRUCT",
+         "pct_employed_education" = "ACS_PCT_EDUC",
+         "pct_employed_finance" = "ACS_PCT_FINANCE",
+         "pct_employed_government" = "ACS_PCT_GOVT",
+         "pct_employed_information" = "ACS_PCT_INFORM",
+         "pct_employed_manufacturing" = "ACS_PCT_MANUFACT",
+         "pct_employed_nature" = "ACS_PCT_NATURE",
+         "pct_employed_other" = "ACS_PCT_OTHER",
+         "pct_employed_professional" = "ACS_PCT_PROFESS",
+         "pct_employed_nonprofit" = "ACS_PCT_PVT_NONPROFIT",
+         "pct_employed_retail" = "ACS_PCT_RETAIL",
+         "pct_employed_transportation" = "ACS_PCT_TRANSPORT",
+         "pct_employed_wholesale" = "ACS_PCT_WHOLESALE",
+         "pct_employed" = "ACS_PCT_EMPLOYED",
+         "pct_unemployed" = "ACS_PCT_UNEMPLOY",
+         "gini_index" = "ACS_GINI_INDEX",
+         "pct_hh_inc_10,000" = "ACS_PCT_HH_INC_10000",
+         "pct_hh_inc_100,000" = "ACS_PCT_HH_INC_100000",
+         "pct_hh_inc_14,999" = "ACS_PCT_HH_INC_14999",
+         "pct_hh_inc_24,999" = "ACS_PCT_HH_INC_24999",
+         "pct_hh_inc_49,999" = "ACS_PCT_HH_INC_49999",
+         "pct_hh_inc_99999" = "ACS_PCT_HH_INC_99999",                         # renamed by mg
+         "per_capita_income" = "ACS_PER_CAPITA_INC",
+         "median_home_value" = "ACS_MEDIAN_HOME_VALUE",
+         "median_rent" = "ACS_MEDIAN_RENT",
+         "pct_houses_vacant" = "ACS_PCT_VACANT_HU",
+         "pct_15_min_commute" = "ACS_PCT_COMMT_15MIN",
+         "pct_29_min_commute" = "ACS_PCT_COMMT_29MIN",
+         "pct_59_min_commute" = "ACS_PCT_COMMT_59MIN",
+         "pct_60_min_plus_commute" = "ACS_PCT_COMMT_60MINUP",
+         "pct_public_transportatin" = "ACS_PCT_PUBL_TRANSIT",
+         "pct_w_medicaid" = "ACS_PCT_MEDICAID_ANY",
+         "pct_w_medicare" = "ACS_PCT_MEDICARE_ONLY",
+         "adv_practice_nurse_pt" = "AHRF_ADV_NURSES_RATE",
+         "clinical_nurse_pt" = "AHRF_CLIN_NURSE_SPEC_RATE",
+         "dentist_pt" = "AHRF_DENTISTS_RATE",
+         "anesthetist_nurse_pt" = "AHRF_NURSE_ANESTH_RATE",
+         "midwife_pt" = "AHRF_NURSE_MIDWIVES_RATE",
+         "nurse_practitioner_pt" = "AHRF_NURSE_PRACT_RATE",
+         "pa_pt" = "AHRF_PHYSICIAN_ASSIST_RATE",
+         "syringe_exchange_pt" = "AMFAR_SSP_RATE",
+         "substance_abuse_facility_pt" = "AMFAR_MEDSAFAC_RATE",
+         "mental_health_faciliy_pt" = "AMFAR_MHFAC_RATE",
+         "land_area_sqm" = "CEN_AREALAND_SQM_COUNTY",
+         "population_density" = "CEN_POPDENSITY_COUNTY",
+         "days_over_90_f" = "NEPHTN_HEATIND_90",
+         "co_measure" = "EPAA_2NDMAX_CO_1HR",
+         "no2_measure" = "EPAA_98PR_NO2_1HR",
+         "pb_measure" = "EPAA_MAX_PB_3MON",
+         "pm_2.5_measure" = "EPAA_98PR_PM25_DAILY",
+         "so2_measure" = "EPAA_99PR_SO2_1HR",
+         "median_hh_income" = "SAIPE_MEDIAN_HH_INCOME",
+         "pct_people_in_poverty" = "SAIPE_PCT_POV",
+         "rehospitalization_rate" = "LTC_AVG_OBS_REHOSP_RATE",
+         "successful_discharge_rate" = "LTC_AVG_OBS_SUCCESSFUL_DISC_RATE",
+         "medicare_inpatient_payment" = "MGV_PER_CAPITA_STD_IP"         ,
+         "medicare_outpatient_payment" = "MGV_PER_CAPITA_STD_OP",
+         "medicare_e&m_payment" = "MGV_PER_CAPITA_STD_EM",
+         "medicare_acute_care_payment" = "MGV_PER_CAPITA_STD_PA",
+         "medicare_fqrc_rhc_payment" = "MGV_PER_CAPITA_STD_HC",
+         "median_er_dist" = "POS_MEDIAN_DIST_ED",
+         "median_surgery_dist" = "POS_MEDIAN_DIST_MEDSURG_ICU",
+         "median_trauma_center_dist" = "POS_MEDIAN_DIST_TRAUMA",
+         "median_pediatric_icu_dist" = "POS_MEDIAN_DIST_PED_ICU",
+         "median_obstetrics_dist" = "POS_MEDIAN_DIST_OBSTETRICS",
+         "median_health_clinic_dist" = "POS_MEDIAN_DIST_CLINIC",
+         "median_drug_alcohol_care_dist" = "POS_MEDIAN_DIST_ALC"
+    
+  ) %>% 
+  mutate(fips_code = as.numeric(fips_code))
+```
+
+```{r chr feature cleaning 1: su}
+# remove unwanted features
+# convert principal care providers from per 100,000 people to per 1,000 people to match other data
+
+chr_data <- chr_data %>%
+  select("fipscode",
+         "v002_rawvalue",
+         "v042_rawvalue",
+         "v037_rawvalue",
+         "v009_rawvalue",
+         "v011_rawvalue",
+         "v133_rawvalue",
+         "v070_rawvalue",
+         "v132_rawvalue",  
+         "v049_rawvalue", 
+         "v014_rawvalue", 
+         "v085_rawvalue", 
+         "v062_rawvalue",
+         "v050_rawvalue",
+         "v155_rawvalue", 
+         "v168_rawvalue", 
+         "v069_rawvalue", 
+         "v023_rawvalue", 
+         "v024_rawvalue", 
+         "v044_rawvalue", 
+         "v140_rawvalue",
+         "v135_rawvalue",
+         "v125_rawvalue",
+         "v124_rawvalue",
+         "v136_other_data_1",
+         "v136_other_data_2",
+         "v136_other_data_3",
+         "v137_rawvalue",
+         "v147_rawvalue",
+         "v127_rawvalue",
+         "v128_rawvalue",
+         "v129_rawvalue",
+         "v144_rawvalue",
+         "v061_rawvalue",
+         "v139_rawvalue",
+         "v138_rawvalue",
+         "v143_rawvalue", 
+         "v021_rawvalue",
+         "v149_rawvalue", 
+         "v159_rawvalue", 
+         "v160_rawvalue",
+         "v167_rawvalue", 
+         "v169_rawvalue", 
+         "v151_rawvalue", 
+         "v063_rawvalue",
+         "v170_rawvalue",
+         "v065_rawvalue",
+         "v141_rawvalue",
+         "v171_rawvalue", 
+         "v015_rawvalue", 
+         "v161_rawvalue", 
+         "v148_rawvalue", 
+         "v158_rawvalue", 
+         "v177_rawvalue", 
+         "v156_rawvalue",
+         "v153_numerator", 
+         "v052_rawvalue", 
+         "v053_rawvalue", 
+         "v058_rawvalue", 
+         "v004_rawvalue", 
+         "v005_rawvalue"
+  ) %>% 
+  mutate(pcp_pt = v004_rawvalue/100) %>% 
+  select(-v004_rawvalue) %>% 
+  rename("fips_code" = "fipscode",
+         "pct_poor_to_fair_health" = "v002_rawvalue",
+         "pct_adult_smokers" = "v009_rawvalue",
+         "pct_obese_adults" = "v011_rawvalue",
+         "pct_no_exercise" = "v070_rawvalue",
+         "pct_binge_drinkers" = "v049_rawvalue",
+         "pct_under_65_no_health_insurance" = "v085_rawvalue",
+         "pct_highschool_diploma" = "v168_rawvalue",
+         "pct_some_college" = "v069_rawvalue",
+         "pct_adult_poverty" = "v024_rawvalue",
+         "inequality_ratio" = "v044_rawvalue",
+         "social_clubs_per_10k" = "v140_rawvalue",
+         "air_polution_metric" =  "v125_rawvalue",
+         "water_quality" = "v124_rawvalue",                          # renamed by mg
+         "pct_high_housing_costs" = "v136_other_data_1",
+         "pct_overcrowded_hh" = "v136_other_data_2",
+         "pct_no_kitchen_or_plumbinmg" = "v136_other_data_3",
+         "pct_food_insecurities" = "v139_rawvalue",
+         "pct_insufficient_sleep" = "v143_rawvalue",
+         "school_funding_gap" = "v169_rawvalue",
+         "pct_income_to_childcare" = "v171_rawvalue",
+         "pct_voters" = "v177_rawvalue",
+         "pct_home_owner" = "v153_numerator",
+         "pct_0_17_age" = "v052_rawvalue",
+         "pct_65_plus" = "v053_rawvalue",
+         "pct_rural_population" = "v058_rawvalue",
+         "poor_mental_health" = "v042_rawvalue",
+         "pct_low_birthweight" = "v037_rawvalue",
+         "food_enviroment" = "v133_rawvalue",
+         "pct_access_to_exercise" = "v132_rawvalue",
+         "teen_births_prk_1k" = "v014_rawvalue",
+         "mental_health_providers_per_100k" = "v062_rawvalue",
+         "hospital_stay_per_100k" = "v005_rawvalue",
+         "pct_elderly_mmmograms" = "v050_rawvalue",
+         "pct_flu_vaccines_billed" = "v155_rawvalue",
+         "pct_unemployed" = "v023_rawvalue",
+         "injury_death_rate_per_100k" = "v135_rawvalue",
+         "life_expectancy_years" = "v147_rawvalue",
+         "premature_deaths_per_100k" = "v127_rawvalue",
+         "underage_deaths_per_100k" = "v128_rawvalue",
+         "infant_deaths_per_1k_births" = "v129_rawvalue",
+         "pct_poor_health" = "v144_rawvalue",
+         "pct_hiv" = "v061_rawvalue",
+         "drug_overdose_per_100k" = "v138_rawvalue",
+         "pct_insufficieficient_sleep" = "v143_rawvalue",
+         "pct_on_time_hs_graduation" = "v021_rawvalue",
+         "pct_disconnected_youth" = "v149_rawvalue",
+         "children_reading_score" = "v159_rawvalue",
+         "children_math_score" = "v160_rawvalue",
+         "school_segregation" = "v167_rawvalue",
+         "women_to_man_pay_ratio" = "v151_rawvalue",
+         "median_hh_income" = "v063_rawvalue",
+         "hourly_living_wage" = "v170_rawvalue",
+         "children_eligible_for_lunch" = "v065_rawvalue",
+         "black_white_segregation" = "v141_rawvalue",
+         "homicides_per_100k" = "v015_rawvalue",
+         "suicides_per_100k" = "v161_rawvalue",
+         "firearm_fatalities_per_100k" = "v148_rawvalue",
+         "juvenile_arrests_per_1k" = "v158_rawvalue",
+         "traffic_per_meter" = "v156_rawvalue",
+         "pct_30_min_plus_commute"  = "v137_rawvalue")
+```
+
+*Combine datasets*
+
+```{r qol dataset create and clean: su}
+# Create and clean the qol_data dataset
+qol_data <- sdoh_data %>%
+  inner_join(chr_data, by = "fips_code") %>%
+  mutate(response = ifelse(pct_poor_to_fair_health >= 0.154, "worse", "better")) %>%
+  mutate(response = as.factor(response)) %>%
+  #select(-pct_poor_to_fair_health) %>%              # keep until analysis has been performed
+  mutate_at(vars(state, county, region), as.factor)   # convert characters to factors
+
+```
+
+```{r pca analysis}
+# run a pca (DO this with 0, 1) or lda (prefered) on numeric data
+number = dim(qol_data)[1]
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*Features with NA's*
+
+```{r understand na distribution: su}
+# sum of NAs in each column
+na_counts <- colSums(is.na(qol_data))
+
+# combine column names and NA counts into a dataframe
+na_counts_df <- data.frame(variable_name = names(na_counts), na_count = na_counts)
+
+# Sort the dataframe by NA_Count in descending order
+na_counts_df <- na_counts_df[order(-na_counts_df$na_count), ]
+
+# View the sorted dataframe
+print(na_counts_df)
+
+# Due to large amount of NA values in these observations, the following will be removed as no clear value can be used to replace the NA's and there are reasonable alternatives to that predictor:
+# hourly_living_wage, pb_measure, co_measure, no2_measure, so2_measure, pm_2.5_measure, pct_disconnected_youth, infant_deaths_per_1k_births, homicides_per_100k, drug_overdose_per_100k, underage_deaths_per_100k, juvenile_arrests_per_1k, black_white_segregation, firearm_fatalities_per_100k, pct_on_time_hs_graduation, suicides_per_100k, children_eligible_for_lunch, pct_hiv, children_math_score, children_reading_score, successful_discharge_rate, rehospitalization_rate, school_segregation_0:1__low:high, mental_health_providers_per_100k, teen_births_prk_1k, traffic_per_meter, pcp_pt, pct_low_birthweight, injury_death_rate_per_100k, hospital_stay_per_100k, premature_deaths_per_100k
+
+# This still leaves a large number of predictors which can be further winnowed down due to duplication or near duplication between data-sets:
+# pct_unemployed.y, median_hh_income.y, pct_15_min_commute, pct_29_min_commute, pct_59_min_commute, pct_60_min_plus_commute, pct_access_to_exercise, poor_mental_health, life_expectancy_years, food_enviroment_1:10_bad:good, pct_poor_health
+
+# Others will be removed due to the data being obscure for our purposes:
+# medicare_inpatient_payment, medicare_outpatient_payment, medicare_e&m_payment, medicare_acute_care_payment, medicare_fqrc/rhc_payment, pct_elderly_mmmograms, pct_flu_vaccines_billed, pct_insufficieficient_sleep, women_to_man_pay_ratio 
+```
+
+```{r remove high na qol features: su}
+qol_data <- qol_data %>% 
+  select(
+    -hourly_living_wage, 
+    -pb_measure, 
+    -co_measure, 
+    -no2_measure, 
+    -so2_measure, 
+    -pm_2.5_measure, 
+    -pct_disconnected_youth, 
+    -infant_deaths_per_1k_births, 
+    -homicides_per_100k, 
+    -drug_overdose_per_100k, 
+    -underage_deaths_per_100k, 
+    -juvenile_arrests_per_1k, 
+    -black_white_segregation, 
+    -firearm_fatalities_per_100k, 
+    -pct_on_time_hs_graduation, 
+    -suicides_per_100k, 
+    -children_eligible_for_lunch, 
+    -pct_hiv, 
+    -children_math_score, 
+    -children_reading_score, 
+    -successful_discharge_rate, 
+    -rehospitalization_rate, 
+    -school_segregation, 
+    -mental_health_providers_per_100k, 
+    -teen_births_prk_1k, 
+    -traffic_per_meter, 
+    -pcp_pt, 
+    -pct_low_birthweight, 
+    -injury_death_rate_per_100k, 
+    -hospital_stay_per_100k, 
+    -premature_deaths_per_100k,
+    -pct_unemployed.y, 
+    -median_hh_income.y, 
+    -pct_15_min_commute, 
+    -pct_29_min_commute, 
+    -pct_59_min_commute, 
+    -pct_60_min_plus_commute, 
+    -pct_access_to_exercise, 
+    -pct_poor_health, 
+    # -life_expectancy_years,           # keep for initial analysis 
+    -food_enviroment, 
+    -poor_mental_health,
+    -medicare_inpatient_payment, 
+    -medicare_outpatient_payment, 
+    -matches("medicare_e&m_payment"), 
+    -medicare_acute_care_payment, 
+    -medicare_fqrc_rhc_payment, 
+    -pct_elderly_mmmograms, 
+    -pct_flu_vaccines_billed, 
+    -pct_insufficieficient_sleep, 
+    -women_to_man_pay_ratio  
+  ) %>% 
+  na.omit()
+```
+
+*Correlation*
+
+```{r qol correlation: su}
+# find predictors with high correlation to shrink the model
+
+# subset qol_data to include only numeric variables
+# identify values with variance inflation factors
+qol_numeric <- qol_data %>%
+  mutate(response = if_else(response == "worse", 0, 1)) %>% 
+  select(-state,
+         -county,
+         -region)
+
+# calculate the correlation matrix
+cor_matrix <- cor(qol_numeric)
+
+# plot correlations to visualize
+corrplot(cor_matrix, method = "circle") # data too dense to visualize
+
+# find the indices of correlations greater than 0.7
+high_cor_indices <- which(abs(cor_matrix) > 0.7, arr.ind = TRUE) # 0.8 is more commonly accepted, also run regression andview variance inflation factors with logistic regression
+
+# extract the pairs of variables with correlation greater than 0.7
+high_cor_pairs <- data.frame(
+  var1 = rownames(cor_matrix)[high_cor_indices[, 1]],
+  var2 = colnames(cor_matrix)[high_cor_indices[, 2]],
+  correlation = cor_matrix[high_cor_indices]
+)
+
+# filter out duplicates and self-correlations
+high_cor_pairs <- high_cor_pairs[high_cor_pairs$var1 != high_cor_pairs$var2, ]
+high_cor_pairs <- high_cor_pairs[!duplicated(t(apply(high_cor_pairs, 1, sort))), ]
+
+print(high_cor_pairs)
+
+# Remove predictors with large correlation value (|0.7|) or greater with multi-colinearity and low relevance.
+```
+
+```{r correlation removal: su}
+qol_data <- qol_data %>%
+  select(-adv_practice_nurse_pt,
+         -pct_0_17_age,
+         -pct_adult_poverty,
+         -pct_female,
+         -pct_hh_broadband,
+         -pct_hh_cell_data,
+         -matches("pct_hh_inc_10,000"),
+         -matches("pct_hh_inc_100,000"),
+         -matches("pct_hh_inc_14,999"),
+         -matches("pct_hh_inc_24,999"),
+         -matches("pct_hh_inc_49,999"),
+         -pct_hh_no_computing_device,
+         -pct_hh_no_internet,
+         -pct_hh_smartphone,
+         -pct_hh_tablet,
+         -pct_no_exercise,
+         -pct_not_citizens,
+         -pct_people_in_poverty,
+         -pct_unemployed.x,
+         -per_capita_income,
+         -weighted_population,
+         -pct_food_insecurities,
+         -pct_hh_computer,
+         -pct_naturalized_citizens,
+         -median_rent,
+         -median_home_value,
+         -pct_w_medicaid
+  )
+```
+
+*Near zero variance*
+
+```{r find values with nzr: su}
+# identify predictors with near-zero variance (high collinearity)
+nzv <- nearZeroVar(qol_numeric, saveMetrics = TRUE)
+
+# select for predictors with near zero variance
+nzv <- nzv[nzv$nzv == TRUE, ]
+print(nzv)
+```
+
+```{r nzr removal: su}
+# remove features with near zero variance
+qol_data <- qol_data %>%
+  select(-syringe_exchange_pt
+  )
+```
+
+*Features with low interest*
+
+```{r low interest feature removal: su}
+# per group discussion, remove low interest features from model
+qol_data <- qol_data %>%
+  select(-pct_adult_citizens,
+         -pct_no_english_spoken,
+         -pct_hh_satellite,
+         -pct_hh_dial_up,
+         -pct_employed_admin,
+         -pct_employed_arts,
+         -pct_employed_construction,
+         -pct_employed_education,
+         -pct_employed_finance,
+         -pct_employed_government,
+         -pct_employed_information,
+         -pct_employed_manufacturing,
+         -pct_employed_nature,
+         -pct_employed_other,
+         -pct_employed_professional,
+         -pct_employed_nonprofit,
+         -pct_employed_retail,
+         -pct_employed_transportation,
+         -pct_employed_wholesale,
+         -gini_index,
+         -pct_houses_vacant,
+         -pct_public_transportatin,
+         -anesthetist_nurse_pt,
+         -midwife_pt,
+         -nurse_practitioner_pt,
+         -substance_abuse_facility_pt,
+         -land_area_sqm,
+         -median_surgery_dist,
+         -median_obstetrics_dist,
+         -pct_some_college,
+         -pct_no_kitchen_or_plumbinmg,
+         -pct_income_to_childcare,
+  )
+```
+
+*Variance inflation features*
+
+```{r identify vif: su}
+qol_numeric <- qol_data %>% 
+  select(-state,
+         -county,
+         -region,
+         -life_expectancy_years,
+         -fips_code)
+
+
+
+vif_values <- vif(lm(response ~ ., data = qol_numeric))
+high_vif <- names(vif_values[vif_values > 5])
+high_vif
+# no further feature removal needed at this point
+```
+
+*Subset regression viability check*
+
+```{r qol regsubsets selection: su}
+# identify best model for response with regsubset, tests for linear models 
+qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
+                             really.big = TRUE,
+                             nvmax = 45)
+```
+
+```{r identifying ideal # of variables: su}
+reg_fit_summary <- summary(qol_regfit_full)
+
+# identifying ideal number of variables for each metric
+which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
+which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
+which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
+which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
