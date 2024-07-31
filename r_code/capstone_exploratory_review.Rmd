@@ -31,7 +31,7 @@ library(codebookr)     # adding appendix to r code
 library(gtsummary)     # creating tables
 library(cardx)         # to include statistic results
 library(moments)       # to calculate skewness and kurtosis
-library(tigris)
+library(tigris)        # to access US geographic data 
 ```
 
 *Data load*
