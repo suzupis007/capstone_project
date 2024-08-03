@@ -1614,3 +1614,48 @@ ggplot(top_20_importance, aes(x = reorder(Feature, Importance), y = Importance))
 
 ```
 
+
+
+# PCA
+```{r mg}
+qol_train_standardized <- qol_train %>%
+  select(-response) %>%
+  scale() # standardize the data (exclude the response variable)
+
+pca_model <- prcomp(qol_train_standardized, center = TRUE, scale. = TRUE) # apply PCA
+
+summary(pca_model) # print summary of PCA model
+
+plot(pca_model, type = "l") # plot explained variance
+
+pca_components <- predict(pca_model, qol_train_standardized) # extract the principal components
+
+head(pca_components)
+
+```
+
+
+# cross-validation
+```{r cross-validation results mg}
+qol_train$response <- as.factor(qol_train$response) # ensure the response variable is a factor
+
+train_control <- trainControl(method = "cv", number = 5) # define control for cross-validation
+
+
+set.seed(123)
+ols_cv <- train(response ~ ., data = qol_train, method = "glm", family = binomial, trControl = train_control) # train an OLS model: cross-validation used for classification
+
+print(ols_cv)
+print(ols_cv$results) # OLS cross-validation results
+print(paste("Best OLS model accuracy:", max(ols_cv$results$Accuracy)))
+
+set.seed(123)
+rf_cv <- train(response ~ ., data = qol_train, method = "rf", trControl = train_control, ntree = 500) # train random forest model using cross-validation for classification
+
+print(rf_cv)
+print(rf_cv$results)
+print(paste("best rf model accuracy = ", max(rf_cv$results$Accuracy)))
+# print random Forest cross-validation results
+```
+
+
