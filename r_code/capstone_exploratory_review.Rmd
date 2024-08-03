@@ -1606,6 +1606,7 @@ top_20_importance <- importance_df[order(-importance_df$Importance), ][1:20, ]
 # Plot top 20 feature importance using ggplot2
 ggplot(top_20_importance, aes(x = reorder(Feature, Importance), y = Importance)) +
   geom_bar(stat = "identity") +
+  
   coord_flip() +
   xlab("Feature") +
   ylab("Importance") +
