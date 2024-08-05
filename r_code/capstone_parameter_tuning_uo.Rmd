@@ -34,6 +34,9 @@ library(moments)       # to calculate skewness and kurtosis
 library(VIM)           # to run K- Nearest Neighbour
 library(pROC)          # to analyse and display reciever operating characteristics(ROC) curvees
 library(randomForest)  # to impletement Random Forest algorithm
+library(glmnet)
+library(tidymodels)
+library(recipes)
 ```
 
 *Data load*
@@ -221,7 +224,7 @@ calcSplitRatio <- function(p = NA, df) {
 calcSplitRatio(df = qol_data)
 ```
 
-
+Split data intraining and testing sets, delete nion useful features, input missing values
 
 ```{r impune missing data values}
 # Find columns with missing data
@@ -233,9 +236,15 @@ qol_data <- qol_data[!is.na(qol_data$response), ]
 
 qol_data <- qol_data[, !names(qol_data) %in% "pcp_pt"]
 
+set.seed(112)
 # Splitting the data into train and test sets
-qol_train <- qol_data[sample(nrow(qol_data), 0.86*nrow(qol_data)), ]
-qol_test <- qol_data[!(rownames(qol_data) %in% rownames(qol_train)), ]
+
+
+data_split <- initial_split(qol_data, strata = "response", prop = 0.86)
+
+qol_train <- training(data_split)
+qol_test  <- testing(data_split)
+
 
 # Selecting only numeric columns for imputation
 numeric_cols <- sapply(qol_train, is.numeric)
@@ -258,7 +267,7 @@ qol_test_imputed <- mice(qol_test_numeric, m = 1, method = "cart",
 qol_train <- cbind(qol_train[, !numeric_cols], complete(qol_train_imputed))
 qol_test <- cbind(qol_test[, !numeric_cols], complete(qol_test_imputed))
 
-
+sum(colSums(is.na(qol_test)))
 
 ```
 
@@ -267,40 +276,73 @@ Encode character Variables
 ```{r character clean-up}
 # use count of areas (state and region) for features that are characters
 # Create dummy variables for 'region' in training data
-dummies_train <- dummyVars(~ region, data = qol_train, fullRank = FALSE)
-qol_train_encoded <- predict(dummies_train, newdata = qol_train)
-qol_train <- cbind(qol_train, qol_train_encoded) %>%
-  select(-region) # Remove the original 'region' column
+#set.seed(1)
+#dummies_train <- dummyVars(~ region, data = qol_train, fullRank = FALSE)
+#qol_train_encoded <- predict(dummies_train, newdata = qol_train)
+#qol_train <- cbind(qol_train, qol_train_encoded) %>%
+  #select(-region) # Remove the original 'region' column
 
-
+#set.seed(1)
 # Create dummy variables for 'region' in test data
-dummies_test <- dummyVars(~ region, data = qol_test, fullRank = FALSE)
-qol_test_encoded <- predict(dummies_test, newdata = qol_test)
-qol_test <- cbind(qol_test, qol_test_encoded) %>%
-  select(-region) # Remove the original 'region' column
+#dummies_test <- dummyVars(~ region, data = qol_test, fullRank = FALSE)
+#qol_test_encoded <- predict(dummies_test, newdata = qol_test)
+#qol_test <- cbind(qol_test, qol_test_encoded) %>%
+  #select(-region) # Remove the original 'region' column
 
 #Encode response variable as 1(worse) and 0(better) 
 
 #encode response variable in training set
-qol_train <- qol_train %>%
-  mutate(response = ifelse(response == "better", 0, 1))
-table(qol_train$response)
+#qol_train <- qol_train %>%
+  #mutate(response = ifelse(response == "better", 0, 1))
+#table(qol_train$response)
 # Convert response variable to factor 
-qol_train$response <- as.factor(qol_train$response)
+#qol_train$response <- as.factor(qol_train$response)
 
 
 
 #encode response variable in testing set
-qol_test <- qol_test %>%
-  mutate(response = ifelse(response == "better", 0, 1))
-table(qol_test$response)
+#qol_test <- qol_test %>%
+  #mutate(response = ifelse(response == "better", 0, 1))
+#table(qol_test$response)
 # Convert response variable to factor 
-qol_test$response <- as.factor(qol_test$response)
+#qol_test$response <- as.factor(qol_test$response)
 
 
 
 
 ```
+
+
+
+```{r}
+
+set.seed(12)
+# Create a recipe
+response_recipe <- recipe(response ~ ., data = qol_train) %>%
+  step_mutate(response = ifelse(response == "better", 0, 1)) %>%  # Encode 'response' as 1 and 0
+  step_dummy(region, one_hot = TRUE) %>%  # One-hot encode the 'region' feature to include all 4 regions
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors()) %>%
+  #step_rm(region) %>%  # Remove the original 'region' column
+  #step_rm(response) %>%  # Remove the original 'response' column
+  prep(training = qol_train, retain = TRUE)
+
+# Apply the recipe to the training and testing datasets
+qol_train <- bake(response_recipe, new_data = qol_train)
+qol_test <- bake(response_recipe, new_data = qol_test)
+
+#show distribution of response variable in 
+# For qol_train dataset
+table(qol_train$response)
+
+# For qol_test dataset
+table(qol_test$response)
+
+
+```
+
+
+
 
 ```{r box-cox}
 #  use to identify which transformation to use
@@ -386,7 +428,8 @@ points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
 ```
 
 
-Build a simple OLS model
+Build a simple OLS and RF model
+
 
 
 ```{r }
@@ -395,11 +438,13 @@ Build a simple OLS model
 # Convert response variable to numeric
 qol_train$response <- as.numeric(as.character(qol_train$response))
 
-
 # --- OLS Model ---
 
 # Fit the OLS model
 ols_model <- lm(response ~ ., data = qol_train)
+
+# Print OLS coefficients
+print(summary(ols_model)$coefficients)
 
 # Predict on the test set
 predictions_ols <- predict(ols_model, newdata = qol_test)
@@ -417,7 +462,7 @@ importance_df_ols <- importance_df_ols[order(-importance_df_ols$Importance), ]
 # --- Random Forest Model ---
 
 # Train a random forest model
-rf_model <- randomForest(as.factor(response) ~ ., data = qol_train, ntree = 500, na.action = na.omit)
+rf_model <- randomForest(as.factor(response) ~ ., data = qol_train, ntree = 1000, na.action = na.omit)
 
 # Predict on the test set
 predictions_rf <- predict(rf_model, qol_test, type = "prob")[, 2]
@@ -444,7 +489,7 @@ plot_roc <- function(predictions, model_name) {
     geom_abline(linetype = "dashed") +
     xlab("False Positive Rate") +
     ylab("True Positive Rate") +
-    ggtitle(paste("ROC Curve (", model_name, ", AUC =", round(auc_value, 2), ")"))
+    ggtitle(paste("ROC Curve (", model_name, ", AUC =", round(auc_value, 4), ")"))
 }
 
 # Plot ROC curves for both models
@@ -480,11 +525,103 @@ ggplot(top_20_features_rf, aes(x = reorder(Feature, Importance), y = Importance)
   labs(title = "Top 20 Feature Importance (RF)", x = "Feature", y = "Importance") +
   theme_minimal()
 
+
 ```
 
 
 
 
+Assumptions
+OLS Model
+Linearity: Assumes a linear relationship between the predictors and the response variable.
+Independence: Assumes that the observations are independent.
+Homoscedasticity: Assumes constant variance of the errors.
+Normality: Assumes that the errors are normally distributed.
+To check these assumptions,  use the following diagnostics:
+
+Residuals Plot: To check for homoscedasticity and linearity.
+Q-Q Plot: To check for normality of residuals.
+Durbin-Watson Test: To check for independence of residuals.
+```{r}
+
+# Residuals plot
+plot(ols_model, which = 1)
+
+# Q-Q plot
+plot(ols_model, which = 2)
+
+# Durbin-Watson test
+library(lmtest)
+dwtest(ols_model)
+```
 
 
+
+build Lasso Model
+```{r}
+
+
+
+# Convert response variable to factor
+qol_train$response <- as.factor(qol_train$response)
+qol_test$response <- as.factor(qol_test$response)
+
+# Create design matrices (excluding response variable)
+x_train <- model.matrix(~ ., data = qol_train[,-which(names(qol_train) == "response")])
+x_test <- model.matrix(~ ., data = qol_test[,-which(names(qol_test) == "response")])
+
+# Fit the Lasso model
+lasso_model <- glmnet(x_train, qol_train$response, family = "binomial", alpha = 1) 
+
+# Find optimal lambda using cross-validation
+cv_lasso <- cv.glmnet(x_train, qol_train$response, family = "binomial", alpha = 1)
+
+# Predict on the test set using the optimal lambda
+predictions_lasso <- predict(lasso_model, newx = x_test, s = cv_lasso$lambda.min, type = "response")
+
+# Convert probabilities to class predictions (0 or 1)
+predicted_classes_lasso <- ifelse(predictions_lasso > 0.5, 1, 0)
+
+# Calculate accuracy
+accuracy_lasso <- mean(qol_test$response == predicted_classes_lasso)
+cat("Accuracy (Lasso):", accuracy_lasso, "\n")
+
+# Plot ROC curve
+roc_lasso <- roc(qol_test$response, predictions_lasso)
+auc_lasso <- auc(roc_lasso)
+cat("AUC (Lasso):", auc_lasso, "\n")
+
+ggplot(data.frame(fpr = 1 - roc_lasso$specificities, tpr = roc_lasso$sensitivities), 
+       aes(x = fpr, y = tpr)) +
+  geom_line() +
+  geom_abline(linetype = "dashed") +
+  ggtitle(paste("ROC Curve (Lasso, AUC =", round(auc_lasso, 2), ")")) +
+  xlab("False Positive Rate") +
+  ylab("True Positive Rate")
+
+# Feature importance
+
+# Extract coefficients as a dense vector
+coef_lasso <- coef(lasso_model, s = cv_lasso$lambda.min)
+
+# Extract non-zero coefficients
+non_zero_coefs <- coef_lasso[which(coef_lasso != 0)]
+
+# Get the names of the non-zero coefficients
+feature_names <- rownames(coef_lasso)[which(coef_lasso != 0)]
+
+# Create the data frame
+importance_df_lasso <- data.frame(Feature = feature_names, Importance = abs(non_zero_coefs))
+
+
+importance_df_lasso <- importance_df_lasso[order(-importance_df_lasso$Importance), ]
+top_20_features_lasso <- head(importance_df_lasso, 20)
+
+# Plot top 20 feature importance
+ggplot(top_20_features_lasso, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Top 20 Feature Importance (Lasso)", x = "Feature", y = "Importance") +
+  theme_minimal()
+```
 
