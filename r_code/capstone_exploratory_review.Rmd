@@ -425,8 +425,11 @@ na_counts_df <- data.frame(variable_name = names(na_counts), na_count = na_count
 # Sort the dataframe by NA_Count in descending order
 na_counts_df <- na_counts_df[order(-na_counts_df$na_count), ]
 
-# View the sorted dataframe
-print(na_counts_df)
+# Convert the dataframe to a tibble for better printing
+na_counts_tbl <- as_tibble(na_counts_df)
+
+# Print the tibble
+print(na_counts_tbl)
 
 # Due to large amount of NA values in these observations, the following will be removed as no clear value can be used to replace the NA's and there are reasonable alternatives to that predictor:
 # hourly_living_wage, pb_measure, co_measure, no2_measure, so2_measure, pm_2.5_measure, pct_disconnected_youth, infant_deaths_per_1k_births, homicides_per_100k, drug_overdose_per_100k, underage_deaths_per_100k, juvenile_arrests_per_1k, black_white_segregation, firearm_fatalities_per_100k, pct_on_time_hs_graduation, suicides_per_100k, children_eligible_for_lunch, pct_hiv, children_math_score, children_reading_score, successful_discharge_rate, rehospitalization_rate, school_segregation_0:1__low:high, mental_health_providers_per_100k, teen_births_prk_1k, traffic_per_meter, pcp_pt, pct_low_birthweight, injury_death_rate_per_100k, hospital_stay_per_100k, premature_deaths_per_100k
@@ -529,7 +532,10 @@ high_cor_pairs <- data.frame(
 high_cor_pairs <- high_cor_pairs[high_cor_pairs$var1 != high_cor_pairs$var2, ]
 high_cor_pairs <- high_cor_pairs[!duplicated(t(apply(high_cor_pairs, 1, sort))), ]
 
-print(high_cor_pairs)
+high_cor_pairs_tbl <- as_tibble(high_cor_pairs)
+
+# Print the tibble
+print(high_cor_pairs_tbl)
 
 # Remove predictors with large correlation value (|0.7|) or greater with multi-colinearity and low relevance.
 ```
@@ -626,10 +632,9 @@ qol_data <- qol_data %>%
 
 *Variance inflation features*
 
-```{r}
+```{r build unlabeled model notes}
 # run a pca (DO this with 0, 1) or lda (prefered) on numeric data
 ```
-
 
 ```{r identify vif: su}
 qol_numeric <- qol_data %>% 
@@ -651,49 +656,49 @@ high_vif
 
 ```{r qol regsubsets selection: su}
 # identify best model for response with regsubset, tests for linear models 
-qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
-                             really.big = TRUE,
-                             nvmax = 45)
+#qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
+#                             really.big = TRUE,
+#                             nvmax = 45)
 ```
 
 ```{r identifying ideal # of variables: su}
-reg_fit_summary <- summary(qol_regfit_full)
+#reg_fit_summary <- summary(qol_regfit_full)
 
 # identifying ideal number of variables for each metric
-which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
-which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
-which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
-which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
+#which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
+#which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
+#which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
+#which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
 ```
 
 ```{r visualize regsubset data: su}
 # create plots of each metric to visualize 
 
-par(mfrow = c(2,2))
+#par(mfrow = c(2,2))
 
-plot(reg_fit_summary$rss,
-     xlab="Number of Variables",
-     ylab="RSS",
-     type="l")
-points(45, reg_fit_summary$rss[45], col="red",cex=1.5,pch =20)
+#plot(reg_fit_summary$rss,
+#     xlab="Number of Variables",
+#     ylab="RSS",
+#     type="l")
+#points(45, reg_fit_summary$rss[45], col="red",cex=1.5,pch =20)
 
-plot(reg_fit_summary$adjr2,
-     xlab = "Number of Variables",
-     ylab = "Adjusted R-squared",
-     type = "l")
-points(30, reg_fit_summary$adjr2[30], col="red",cex=1.5,pch =20)
+#plot(reg_fit_summary$adjr2,
+#     xlab = "Number of Variables",
+#     ylab = "Adjusted R-squared",
+#     type = "l")
+#points(30, reg_fit_summary$adjr2[30], col="red",cex=1.5,pch =20)
 
-plot(reg_fit_summary$cp,
-     xlab = "Number of Variables",
-     ylab = "Cp",
-     type = "l")
-points(27, reg_fit_summary$cp[27], col="red",cex=1.5,pch =20)
+#plot(reg_fit_summary$cp,
+#     xlab = "Number of Variables",
+#     ylab = "Cp",
+#     type = "l")
+#points(27, reg_fit_summary$cp[27], col="red",cex=1.5,pch =20)
 
-plot(reg_fit_summary$bic,
-     xlab = "Number of Variables",
-     ylab = "BIC",
-     type = "l")
-points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
+#plot(reg_fit_summary$bic,
+#     xlab = "Number of Variables",
+#     ylab = "BIC",
+#     type = "l")
+#points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
 ```
 
 
@@ -702,16 +707,28 @@ $$Data Exploration$$
 *Updating response*
 
 ```{r poor to fair health distribution: su}
+
+
 ggplot(qol_data,
        mapping = aes(x = '', y = pct_poor_to_fair_health)) +
   geom_boxplot(outlier.colour = 'red') +
-  geom_jitter(alpha = 0.3, size = 0.2) +
   theme_minimal() +
   labs(x = "",
        y = "",
        title = "Percent Self Reporting Poor to Fair Health") +
-  scale_y_continuous(labels = percent_format(scale = 100)) +
-  geom_hline(yintercept = 0.12, color = "blue")
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  annotate("segment", 
+           x = 0.625, xend = 1.375, 
+           y = 0.12, yend = 0.12, 
+           color = "blue", size = 1) +
+  annotate("text", 
+           x = 1, y = 0.137, 
+           label = "National Average", 
+           color = "blue", 
+           size = 4, 
+           hjust = 0.5)
+
+
 
 # with the presence of outliers having high percent self reporting and a lower limit that is not able to be less tha, will use the 
 ```
@@ -961,7 +978,7 @@ ggplot(qol_data_long, aes(x = percentage, y = pct_poor_to_fair_health)) +
        y = "Percentage of Poor to Fair Health")
 ```
 
-*Exploring education, economic, and local enviroment features*
+*Exploring education, economic, and local environment features*
 
 ```{r making new dataset for Mirandas data: mg}
 data_mg <- qol_data %>%
