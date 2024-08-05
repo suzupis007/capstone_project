@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 $$Enviroment Build$$
 
 *Packages Load*
-```{r package load: su}
+```{r package load: su,warning=FALSE}
 # load packages
 
 library(readr)         # load csv files
@@ -32,6 +32,9 @@ library(gtsummary)     # creating tables
 library(cardx)         # to include statistic results
 library(moments)       # to calculate skewness and kurtosis
 library(tigris)        # to access US geographic data 
+library(e1071)         # For skewness calculation
+library(randomForest)  # For bilding random forest models
+
 ```
 
 *Data load*
@@ -1337,11 +1340,339 @@ test_table <- tbl_summary(
 # Print the summary table
 test_table
 
+```
+
+
+
+Remove features with no analytical value namely Fipscode and county, state and pct_poor_to_fair_health
+
+```{r}
+qol_data <- qol_data %>% select(-c(fips_code,county,state,pct_poor_to_fair_health))
 
 ```
 
 
 
 
+###split data into training and testing set
+```{r}
+# Split the data into training and testing sets
+set.seed(123)
+split <- sample(2, nrow(qol_data), replace = TRUE, prob = c(0.86, 0.14))
+qol_train <- qol_data[split == 1, ]
+qol_test <- qol_data[split == 2, ]
+
+# Check the distribution of the response variable in the training and testing sets
+table(qol_train$response)
+table(qol_test$response)
+
+
+```
+
+###Encode categorical features
+
+```{r}
+
+# Create dummy variables for 'region' in training data
+dummies_train <- dummyVars(~ region, data = qol_train, fullRank = FALSE)
+qol_train_encoded <- predict(dummies_train, newdata = qol_train)
+qol_train <- cbind(qol_train, qol_train_encoded) %>%
+  select(-region) # Remove the original 'region' column
+
+# Create dummy variables for 'region' in test data
+dummies_test <- dummyVars(~ region, data = qol_test, fullRank = FALSE)
+qol_test_encoded <- predict(dummies_test, newdata = qol_test)
+qol_test <- cbind(qol_test, qol_test_encoded) %>%
+  select(-region) # Remove the original 'region' column
+
+# View the transformed training data
+print("Transformed Training Data:")
+print(qol_train)
+
+# View the transformed test data
+print("Transformed Test Data:")
+print(qol_test)
+
+
+head(qol_test)
+
+```
+
+
+Encode response variable as 1 and 0. (1 if worse than national median and 0 if better than  national median) and convert to factor
+```{r}
+#encode response variable in training set
+qol_train <- qol_train %>%
+  mutate(response = ifelse(response == "better", 0, 1))
+table(qol_data$response)
+# Convert response variable to factor 
+qol_train$response <- as.factor(qol_train$response)
+
+#encode response variable in testing set
+qol_test <- qol_test %>%
+  mutate(response = ifelse(response == "better", 0, 1))
+table(qol_test$response)
+# Convert response variable to factor 
+qol_test$response <- as.factor(qol_test$response)
+
+
+```
+
+
+
+###Handling missing values; identifying and imputing missing characters
+```{r}
+# Count missing values in the train set
+total_missing <- sum(is.na(qol_train))
+print(paste("Total missing values in dataframe:", total_missing))
+
+# Count missing values in the test set
+total_missing <- sum(is.na(qol_train))
+print(paste("Total missing values in dataframe:", total_missing))
+
+```
+
+To determine if there are unwanted characters and whitespace and make corrections:
+We print a sample of the data for visual inspection.
+We use regular expressions to detect unwanted characters in text columns.
+We check for leading, trailing, or excessive whitespace in text columns.
+
+
+```{r}
+# Visual inspection
+#print(head(qol_train))
+
+# Detect unwanted characters using regular expressions
+unwanted_chars <- function(x) {
+  if (is.character(x)) {
+    return(grepl("[^[:alnum:][:space:]]", x))
+  } else {
+    return(FALSE)
+  }
+}
+
+# Apply the function to each column qol_train
+unwanted_chars_results <- sapply(qol_train, function(col) sum(unwanted_chars(col)))
+print("Number of unwanted characters in each column:")
+#print(unwanted_chars_results)
+
+# Apply the function to each column qol_test
+unwanted_chars_results <- sapply(qol_train, function(col) sum(unwanted_chars(col)))
+print("Number of unwanted characters in each column:")
+#print(unwanted_chars_results)
+
+
+
+# Detect leading, trailing, or excessive whitespace
+whitespace_check <- function(x) {
+  if (is.character(x)) {
+    return(grepl("^\\s+|\\s+$|\\s{2,}", x))
+  } else {
+    return(FALSE)
+  }
+}
+
+# Apply the function to each column of training and test sets
+whitespace_results <- sapply(qol_train, function(col) sum(whitespace_check(col)))
+print("Number of whitespace issues in each column:")
+#print(whitespace_results)
+
+
+whitespace_results <- sapply(qol_test, function(col) sum(whitespace_check(col)))
+print("Number of whitespace issues in each column:")
+#print(whitespace_results)
+
+```
+
+
+
+
+###Perform arithmetic transformations for skewed features
+```{r}
+
+```
+
+
+
+###normalize and or scale features
+
+```{r}
+
+```
+
+
+
+
+
+build  initial model (OLS)
+```{r}
+# Convert response variable to numeric
+qol_train$response <- as.numeric(as.character(qol_train$response))
+# Fit the OLS model
+ols_model <- lm(response ~ ., data = qol_train)
+# Predict on the test set
+predictions <- predict(ols_model, newdata = qol_test)
+
+# Convert predictions to binary outcomes
+predicted_classes <- ifelse(predictions > 0.5, 1, 0)
+
+# Evaluate the model
+confusion_matrix <- table(qol_test$response, predicted_classes)
+accuracy_ols <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+# Extract coefficients
+coefficients <- summary(ols_model)$coefficients
+
+# Calculate importance (absolute value of coefficients)
+feature_importance <- abs(coefficients[, "Estimate"])
+
+# Create a data frame for better visualization
+importance_df <- data.frame(Feature = rownames(coefficients), Importance = feature_importance)
+
+# Sort by importance
+importance_df <- importance_df[order(-importance_df$Importance), ]
+
+print(importance_df)
+```
+
+visualize feature importance
+```{r}
+# Select the top 20 important features
+top_20_features_ols <- importance_df %>%
+  arrange(desc(Importance)) %>%
+  head(20)
+
+# Create the bar plot for the top 20 features
+ggplot(top_20_features_ols, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +  # Flip coordinates for better readability
+  labs(title = "Top 20 Feature Importance using ols", x = "Feature", y = "Importance") +
+  theme_minimal()
+
+```
+
+
+Build ROC curve
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(pROC)
+
+# Calculate ROC curve
+roc_ols <- roc(qol_test$response, predictions)
+
+# Create a data frame for ggplot
+roc_data <- data.frame(
+  specificity = rev(roc_ols$specificities),
+  sensitivity = rev(roc_ols$sensitivities)
+)
+
+# Plot ROC curve using ggplot2
+ggplot(roc_data, aes(x = 1-specificity, y = sensitivity)) +
+  geom_line(color = "blue") +
+  geom_abline(linetype = "dashed", color = "red") +
+  labs(title = paste("ROC Curve (AUC =", round(auc(roc_ols), 2), ")"),
+       x = "1 - Specificity",
+       y = "Sensitivity") +
+  theme_minimal() +
+  coord_fixed(ratio = 1)
+
+
+```
+
+### Build random forest model
+
+
+```{r}
+
+
+# Train a random forest model for classification
+model_rf <- randomForest(as.factor(response) ~ ., data = qol_train, ntree = 500)
+
+# Predict the response variable for the testing set
+predictions2 <- predict(model_rf, qol_test, type = "response")
+
+# Calculate the accuracy of the random forest model
+accuracy <- mean(qol_test$response == predictions2)
+print(accuracy)
+
+# Calculate the ROC AUC score
+roc_obj <- roc(qol_test$response, as.numeric(predictions2))
+auc_rf <- auc(roc_obj)
+print(auc_rf)
+
+# Plot the ROC curve using ggplot2
+roc_df <- data.frame(
+  tpr = roc_obj$sensitivities,
+  fpr = 1 - roc_obj$specificities
+)
+
+ggplot(roc_df, aes(x = fpr, y = tpr)) +
+  geom_line() +
+  geom_abline(linetype = "dashed") +
+  xlab("False Positive Rate") +
+  ylab("True Positive Rate") +
+  ggtitle(paste("ROC Curve (AUC =", round(auc_rf, 2), ")"))
+
+# Calculate feature importance
+importance_rf <- importance(model_rf)
+importance_df <- data.frame(Feature = rownames(importance_rf), Importance = importance_rf[, 1])
+
+# Select top 20 important features
+top_20_importance <- importance_df[order(-importance_df$Importance), ][1:20, ]
+
+# Plot top 20 feature importance using ggplot2
+ggplot(top_20_importance, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity") +
+  
+  coord_flip() +
+  xlab("Feature") +
+  ylab("Importance") +
+  ggtitle("Top 20 Feature Importance from Random Forest Model")
+
+```
+
+
+
+# PCA
+```{r mg}
+qol_train_standardized <- qol_train %>%
+  select(-response) %>%
+  scale() # standardize the data (exclude the response variable)
+
+pca_model <- prcomp(qol_train_standardized, center = TRUE, scale. = TRUE) # apply PCA
+
+summary(pca_model) # print summary of PCA model
+
+plot(pca_model, type = "l") # plot explained variance
+
+pca_components <- predict(pca_model, qol_train_standardized) # extract the principal components
+
+head(pca_components)
+
+```
+
+
+# cross-validation
+```{r cross-validation results mg}
+qol_train$response <- as.factor(qol_train$response) # ensure the response variable is a factor
+
+train_control <- trainControl(method = "cv", number = 5) # define control for cross-validation
+
+
+set.seed(123)
+ols_cv <- train(response ~ ., data = qol_train, method = "glm", family = binomial, trControl = train_control) # train an OLS model: cross-validation used for classification
+
+print(ols_cv)
+print(ols_cv$results) # OLS cross-validation results
+print(paste("Best OLS model accuracy:", max(ols_cv$results$Accuracy)))
+
+set.seed(123)
+rf_cv <- train(response ~ ., data = qol_train, method = "rf", trControl = train_control, ntree = 500) # train random forest model using cross-validation for classification
+
+print(rf_cv)
+print(rf_cv$results)
+print(paste("best rf model accuracy = ", max(rf_cv$results$Accuracy)))
+# print random Forest cross-validation results
+```
 
 
