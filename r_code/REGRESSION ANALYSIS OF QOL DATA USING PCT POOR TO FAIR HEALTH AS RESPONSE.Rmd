@@ -1,0 +1,646 @@
+---
+title: "Untitled"
+author: "Udumaga Onyeukwu"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+$$Enviroment Build$$
+
+*Packages Load*
+```{r package load: su, warning=FALSE, message=FALSE}
+# load packages
+
+library(readr)         # load csv files
+library(readxl)        # load excel files
+library(dplyr)         # data manipulation
+library(lubridate)     # date & time manipulation
+library(ggplot2)       # data visualization
+library(tidyr)         # collection of statistical packages, packages loaded individually
+library(corrplot)      # to visualize correlations
+library(leaps)         # for subset selection
+library(caret)         # test for correlation
+library(car)           # for VIF
+library(scales)        # for visualizing plots in %
+library(forcats)       # ordering data frames
+library(codebookr)     # adding appendix to r code
+library(gtsummary)     # creating tables
+library(cardx)         # to include statistic results
+library(moments)       # to calculate skewness and kurtosis
+library(VIM)           # to run K- Nearest Neighbour
+library(pROC)          # to analyse and display reciever operating characteristics(ROC) curvees
+library(randomForest)  # to impletement Random Forest algorithm
+library(glmnet)
+library(tidymodels)
+library(recipes)
+library(lmtest)
+library(xgboost)
+library(openxlsx)
+```
+
+*Data load*
+```{r data load: su}
+# load data
+sdoh_data <- read_csv("data/sdoh_data.csv")
+dim(sdoh_data)
+
+# remove unwanted features, create calculated feature, convert fips_code to data type matching chr_data
+sdoh_data <- sdoh_data %>% 
+  select("COUNTYFIPS", 
+         "STATE", 
+         "COUNTY", 
+         "REGION", 
+         "ACS_TOT_POP_WT", 
+         "ACS_AVG_HH_SIZE", 
+         "ACS_PCT_MALE", 
+         "ACS_PCT_AIAN", 
+         "ACS_PCT_ASIAN", 
+         "ACS_PCT_BLACK", 
+         "ACS_PCT_HISPANIC", 
+         "ACS_PCT_OTHER_RACE", 
+         "ACS_PCT_WHITE", 
+         "ACS_PCT_CHILD_1FAM", 
+         "ACS_PCT_CHILDREN_GRANDPARENT", 
+         "ACS_PCT_GRANDP_RESPS_NO_P", 
+         "ACS_PCT_GRANDP_RESPS_P",
+         "ACS_PCT_HH_OTHER_COMP", 
+         "ACS_PCT_HH_INTERNET",
+         "ACS_PCT_EMPLOYED",
+         "ACS_PCT_HH_INC_99999",
+         "ACS_PCT_MEDICARE_ONLY",
+         "AHRF_CLIN_NURSE_SPEC_RATE", 
+         "AHRF_DENTISTS_RATE",
+         "AHRF_PHYSICIAN_ASSIST_RATE",
+         "AMFAR_MHFAC_RATE",
+         "CEN_POPDENSITY_COUNTY",
+         "NEPHTN_HEATIND_90",
+         "SAIPE_MEDIAN_HH_INCOME",
+         "POS_MEDIAN_DIST_ED",
+         "POS_MEDIAN_DIST_PED_ICU",
+         "POS_MEDIAN_DIST_CLINIC", 
+         "POS_MEDIAN_DIST_ALC", 
+  ) %>% 
+  mutate(percent_grandparents_as_guardians = ACS_PCT_CHILDREN_GRANDPARENT * ((ACS_PCT_GRANDP_RESPS_P + ACS_PCT_GRANDP_RESPS_NO_P)/100)) %>% 
+  select(-ACS_PCT_GRANDP_RESPS_P, -ACS_PCT_GRANDP_RESPS_NO_P, -ACS_PCT_CHILDREN_GRANDPARENT) %>% 
+  rename("fips_code" = "COUNTYFIPS",
+         "state" = "STATE",
+         "county" = "COUNTY",
+         "region" = "REGION",
+         "weighted_population"  = "ACS_TOT_POP_WT",
+         "average_hh_size" = "ACS_AVG_HH_SIZE",
+         "pct_male"  = "ACS_PCT_MALE",
+         "pct_native_american" = "ACS_PCT_AIAN",
+         "pct_asian" = "ACS_PCT_ASIAN",
+         "pct_black" = "ACS_PCT_BLACK",
+         "pct_hispanic" = "ACS_PCT_HISPANIC",
+         "pct_other_race" = "ACS_PCT_OTHER_RACE",
+         "pct_white" = "ACS_PCT_WHITE",
+         "pct_single_parent" = "ACS_PCT_CHILD_1FAM",
+         "pct_hh_other_computer" = "ACS_PCT_HH_OTHER_COMP",
+         "pct_hh_internet" = "ACS_PCT_HH_INTERNET",
+         "pct_employed" = "ACS_PCT_EMPLOYED",
+         "pct_hh_inc_99999" = "ACS_PCT_HH_INC_99999",            # renamed by mg
+         "pct_w_medicare" = "ACS_PCT_MEDICARE_ONLY",
+         "clinical_nurse_pt" = "AHRF_CLIN_NURSE_SPEC_RATE",
+         "dentist_pt" = "AHRF_DENTISTS_RATE",
+         "pa_pt" = "AHRF_PHYSICIAN_ASSIST_RATE",
+         "mental_health_faciliy_pt" = "AMFAR_MHFAC_RATE",
+         "population_density" = "CEN_POPDENSITY_COUNTY",
+         "days_over_90_f" = "NEPHTN_HEATIND_90",
+         "median_hh_income" = "SAIPE_MEDIAN_HH_INCOME",
+         "median_er_dist" = "POS_MEDIAN_DIST_ED",
+         "median_pediatric_icu_dist" = "POS_MEDIAN_DIST_PED_ICU",
+         "median_health_clinic_dist" = "POS_MEDIAN_DIST_CLINIC",
+         "median_drug_alcohol_care_dist" = "POS_MEDIAN_DIST_ALC"
+    
+  ) %>% 
+  mutate(fips_code = as.numeric(fips_code))
+
+chr_data <- read_csv("data/chr_data.csv", skip = 1)
+dim(chr_data)
+# remove unwanted features
+# convert principal care providers from per 100,000 people to per 1,000 people to match other data
+
+chr_data <- chr_data %>%
+  select("fipscode",
+         "v002_rawvalue",
+         "v009_rawvalue",
+         "v011_rawvalue",
+         "v070_rawvalue",  
+         "v049_rawvalue",
+         "v085_rawvalue",
+         "v168_rawvalue", 
+         "v069_rawvalue",
+         "v044_rawvalue", 
+         "v140_rawvalue",
+         "v125_rawvalue",
+         "v124_rawvalue",
+         "v136_other_data_1",
+         "v136_other_data_2",
+         "v137_rawvalue",
+         "v147_rawvalue",
+         "v139_rawvalue",
+         "v177_rawvalue",
+         "v153_rawvalue",
+         "v053_rawvalue", 
+         "v058_rawvalue", 
+         "v004_rawvalue",
+  ) %>% 
+  mutate(pcp_pt = v004_rawvalue/100) %>% 
+  select(-v004_rawvalue) %>% 
+  rename("fips_code" = "fipscode",
+         "pct_poor_to_fair_health" = "v002_rawvalue",
+         "pct_adult_smokers" = "v009_rawvalue",
+         "pct_obese_adults" = "v011_rawvalue",
+         "pct_no_exercise" = "v070_rawvalue",
+         "pct_binge_drinkers" = "v049_rawvalue",
+         "pct_under_65_no_health_insurance" = "v085_rawvalue",
+         "pct_highschool_diploma" = "v168_rawvalue",
+         "pct_some_college" = "v069_rawvalue",
+         "inequality_ratio" = "v044_rawvalue",
+         "social_clubs_per_10k" = "v140_rawvalue",
+         "air_polution_metric" =  "v125_rawvalue",
+         "water_quality" = "v124_rawvalue",                          # renamed by mg
+         "pct_high_housing_costs" = "v136_other_data_1",
+         "pct_overcrowded_hh" = "v136_other_data_2",
+         "pct_food_insecurities" = "v139_rawvalue",
+         "pct_voters" = "v177_rawvalue",
+         "pct_home_owner" = "v153_rawvalue",
+         "pct_65_plus" = "v053_rawvalue",
+         "pct_rural_population" = "v058_rawvalue",
+         "life_expectancy_years" = "v147_rawvalue",
+         "pct_30_min_plus_commute"  = "v137_rawvalue")
+
+# full data sets are extremely large, initial dimension reduction was performed previously
+```
+
+*Combine datasets*
+
+```{r qol dataset create and clean: su}
+# Create and clean the qol_data dataset
+qol_data <- sdoh_data %>%
+  inner_join(chr_data, by = "fips_code") %>%
+  #mutate(response = ifelse(pct_poor_to_fair_health >= 0.154, "worse", "better")) %>%
+  #mutate(response = as.factor(response)) %>%
+  #select(-pct_poor_to_fair_health) %>%              # keep until analysis has been performed
+  mutate_at(vars(state, county, region), as.factor)   # convert characters to factors
+
+```
+
+$$Pre-processing and Feature Enginering$$
+
+eliminate variables with no predictive value: fipscode, county and state, pct_poor_to_fair_health:
+```{r}
+qol_data <- qol_data %>% select(-c(fips_code,county,state))
+```
+
+
+
+```{r data split}
+calcSplitRatio <- function(p = NA, df) {
+  ## @p  = the number of parameters. by default, if none are provided, the number of columns (predictors) in the dataset are used
+  ## @df = the dataframe that will be used for the analysis
+  
+  ## If the number of parameters isn't supplied, set it to the number of features minus 1 for the target
+  if(is.na(p)) {
+    p <- ncol(df) -1   ## COMMENT HERE
+  }
+  
+  ## Calculate the ideal number of testing set
+  test_N <- (1/sqrt(p))*nrow(df)
+  ## Turn that into a testing proportion
+  test_prop <- round((1/sqrt(p))*nrow(df)/nrow(df), 2)
+  ## And find the training proportion
+  train_prop <- 1-test_prop
+  
+  ## Tell us the results!
+  print(paste0("The ideal split ratio is ", train_prop, ":", test_prop, " training:testing"))
+  
+  ## Return the size of the training set
+  return(train_prop)
+}
+
+calcSplitRatio(df = qol_data)
+```
+
+Split data intraining and testing sets, delete non useful features, input missing values
+
+```{r impune missing data values, warning=FALSE, message=FALSE}
+# Find columns with missing data
+#sum(colSums(is.na(qol_data)))
+
+# delete column with large number of missing values 'pcp_pt'
+
+qol_data <- qol_data[, !names(qol_data) %in% "pcp_pt"]
+
+set.seed(112)
+# Splitting the data into train and test sets
+
+
+data_split <- initial_split(qol_data, strata = "pct_poor_to_fair_health", prop = 0.86)
+
+qol_train <- training(data_split)
+qol_test  <- testing(data_split)
+
+
+# Selecting only numeric columns for imputation
+numeric_cols <- sapply(qol_train, is.numeric)
+qol_train_numeric <- qol_train[, numeric_cols]
+qol_test_numeric <- qol_test[, numeric_cols]
+
+# Imputing missing values using mice
+library(mice)
+
+# Imputing missing values in the training set
+qol_train_imputed <- mice(qol_train_numeric, m = 1, method = "cart",  # Using CART for imputation
+                           maxit = 5)  # Maximum iterations for imputation
+
+# Imputing missing values in the test set using the trained model
+qol_test_imputed <- mice(qol_test_numeric, m = 1, method = "cart",
+                           maxit = 5,
+                           use.all = FALSE)  # Using only the training data for imputation
+
+# Combining the imputed numeric columns back with the original data
+qol_train <- cbind(qol_train[, !numeric_cols], complete(qol_train_imputed))
+qol_test <- cbind(qol_test[, !numeric_cols], complete(qol_test_imputed))
+
+
+
+```
+
+one hot encode character Variables,center and scale all predictors except one hot encoded variables. 
+
+
+```{r}
+set.seed(12)
+# Create a recipe
+response_recipe <- recipe(pct_poor_to_fair_health ~ ., data = qol_train) %>%
+ 
+  step_dummy(region, one_hot = TRUE) %>%  # One-hot encode the 'region' feature to include all 4 regions
+  step_center(all_predictors(), -starts_with("region_")) %>%  # Center all predictors except the one-hot encoded 'region' columns
+  step_scale(all_predictors(), -starts_with("region_")) %>%  # Scale all predictors except the one-hot encoded 'region' columns
+  prep(training = qol_train, retain = TRUE)
+
+# Apply the recipe to the training and testing datasets
+qol_train <- bake(response_recipe, new_data = qol_train)
+qol_test <- bake(response_recipe, new_data = qol_test)
+
+
+```
+
+
+
+Build and compare OLs, RF and lasso models
+
+```{r}
+# Fit the OLS model
+ols_model <- lm(pct_poor_to_fair_health ~ ., data = qol_train)
+
+# Print OLS coefficients
+print(summary(ols_model)$coefficients)
+
+# Predict on the test set
+predictions_ols <- predict(ols_model, new_data = qol_test)
+
+# Evaluate the OLS model
+mse_ols <- mean((qol_test$pct_poor_to_fair_health - predictions_ols)^2)
+rmse_ols <- sqrt(mse_ols)
+r2_ols <- summary(ols_model)$r.squared
+print(paste("MSE (OLS):", mse_ols))
+print(paste("RMSE (OLS):", rmse_ols))
+print(paste("R-squared (OLS):", r2_ols))
+
+# --- Feature Importance Visualization (OLS) ---
+
+# Calculate feature importance for OLS
+feature_importance_ols <- abs(summary(ols_model)$coefficients[, "Estimate"])
+importance_df_ols <- data.frame(Feature = names(feature_importance_ols), Importance = feature_importance_ols)
+importance_df_ols <- importance_df_ols[order(-importance_df_ols$Importance), ]
+
+# Select top 20 features
+top_20_features_ols <- head(importance_df_ols, 20)
+
+# Plot top 20 feature importance for OLS
+ggplot(top_20_features_ols, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Top 20 Feature Importance (OLS)", x = "Feature", y = "Importance") +
+  theme_minimal()
+
+# --- Assumptions Diagnostics for OLS Model ---
+
+# Residuals plot
+ggplot(data.frame(residuals = residuals(ols_model), fitted = fitted(ols_model)), aes(x = fitted, y = residuals)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals") +
+  theme_minimal()
+
+# Q-Q plot
+ggplot(data.frame(sample = residuals(ols_model)), aes(sample = sample)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "Q-Q Plot", x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+
+# Durbin-Watson test
+#dwtest(ols_model)
+
+# Perform the Breusch-Godfrey test for autocorrelation
+bg_test <- bgtest(ols_model, order = 1)  # You can change the order as needed
+
+# Print the test results
+print(bg_test)
+
+```
+
+Random forest model
+```{r}
+# Load necessary library
+library(randomForest)
+
+# Train a random forest model
+rf_model <- randomForest(pct_poor_to_fair_health ~ ., data = qol_train, ntree = 1000, na.action = na.omit)
+
+# Predict on the test set
+predictions_rf <- predict(rf_model, qol_test)
+
+# Evaluate the Random Forest model
+mse_rf <- mean((qol_test$pct_poor_to_fair_health - predictions_rf)^2)
+rmse_rf <- sqrt(mse_rf)
+r2_rf <- 1 - (sum((qol_test$pct_poor_to_fair_health - predictions_rf)^2) / sum((qol_test$pct_poor_to_fair_health - mean(qol_test$pct_poor_to_fair_health))^2))
+print(paste("MSE (RF):", mse_rf))
+print(paste("RMSE (RF):", rmse_rf))
+print(paste("R-squared (RF):", r2_rf))
+
+# --- Feature Importance Visualization (RF) ---
+
+# Calculate feature importance for RF
+feature_importance_rf <- importance(rf_model)
+importance_df_rf <- data.frame(Feature = rownames(feature_importance_rf), Importance = abs(feature_importance_rf[, 1]))
+importance_df_rf <- importance_df_rf[order(-importance_df_rf$Importance), ]
+
+# Select top 20 features
+top_20_features_rf <- head(importance_df_rf, 20)
+
+# Plot top 20 feature importance for RF
+ggplot(top_20_features_rf, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Top 20 Feature Importance (RF)", x = "Feature", y = "Importance") +
+  theme_minimal()
+
+```
+
+
+
+```{r}
+
+# Create design matrices (excluding response variable)
+x_train <- model.matrix(pct_poor_to_fair_health ~ ., data = qol_train)[, -1]
+x_test <- model.matrix(pct_poor_to_fair_health ~ ., data = qol_test)[, -1]
+
+# Fit the Lasso model
+lasso_model <- glmnet(x_train, qol_train$pct_poor_to_fair_health, alpha = 1)
+
+# Find optimal lambda using cross-validation
+cv_lasso <- cv.glmnet(x_train, qol_train$pct_poor_to_fair_health, alpha = 1)
+
+# Predict on the test set using the optimal lambda
+predictions_lasso <- predict(lasso_model, newx = x_test, s = cv_lasso$lambda.min)
+
+# Evaluate the Lasso model
+mse_lasso <- mean((qol_test$pct_poor_to_fair_health - predictions_lasso)^2)
+rmse_lasso <- sqrt(mse_lasso)
+r2_lasso <- 1 - (sum((qol_test$pct_poor_to_fair_health - predictions_lasso)^2) / sum((qol_test$pct_poor_to_fair_health - mean(qol_test$pct_poor_to_fair_health))^2))
+print(paste("MSE (Lasso):", mse_lasso))
+print(paste("RMSE (Lasso):", rmse_lasso))
+print(paste("R-squared (Lasso):", r2_lasso))
+
+# --- Feature Importance Visualization (Lasso) ---
+
+# Extract coefficients as a dense vector
+coef_lasso <- coef(lasso_model, s = cv_lasso$lambda.min)
+
+# Extract non-zero coefficients
+non_zero_coefs <- coef_lasso[which(coef_lasso != 0)]
+
+# Get the names of the non-zero coefficients
+feature_names <- rownames(coef_lasso)[which(coef_lasso != 0)]
+
+# Create the data frame
+importance_df_lasso <- data.frame(Feature = feature_names, Importance = abs(non_zero_coefs))
+
+# Select top 20 features
+top_20_features_lasso <- head(importance_df_lasso[order(-importance_df_lasso$Importance), ], 20)
+
+# Plot top 20 feature importance
+ggplot(top_20_features_lasso, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Top 20 Feature Importance (Lasso)", x = "Feature", y = "Importance") +
+  theme_minimal()
+
+```
+
+```{r}
+
+
+# Prepare data for xgboost
+dtrain <- xgb.DMatrix(data = as.matrix(qol_train[, -which(names(qol_train) == "pct_poor_to_fair_health")]), label = qol_train$pct_poor_to_fair_health)
+dtest <- xgb.DMatrix(data = as.matrix(qol_test[, -which(names(qol_test) == "pct_poor_to_fair_health")]), label = qol_test$pct_poor_to_fair_health)
+
+# Set parameters for xgboost
+params <- list(
+  objective = "reg:squarederror",
+  eta = 0.1,
+  max_depth = 6,
+  subsample = 0.8,
+  colsample_bytree = 0.8
+)
+
+# Train the GBM model
+gbm_model <- xgb.train(params, dtrain, nrounds = 100)
+
+# Predict on the test set
+predictions_gbm <- predict(gbm_model, dtest)
+
+# Evaluate the GBM model
+mse_gbm <- mean((qol_test$pct_poor_to_fair_health - predictions_gbm)^2)
+rmse_gbm <- sqrt(mse_gbm)
+r2_gbm <- 1 - (sum((qol_test$pct_poor_to_fair_health - predictions_gbm)^2) / sum((qol_test$pct_poor_to_fair_health - mean(qol_test$pct_poor_to_fair_health))^2))
+print(paste("MSE (GBM):", mse_gbm))
+print(paste("RMSE (GBM):", rmse_gbm))
+print(paste("R-squared (GBM):", r2_gbm))
+
+```
+
+
+
+Compare the 4 models based on the evaluation metrics (MSE, RMSE, and R-squared),
+
+Lower MSE and RMSE indicate better model performance.
+Higher R-squared indicates better model performance.
+After running the code, you can visually compare the performance of the three models. The model with the lowest MSE and RMSE and the highest R-squared would be the recommended choice.
+```{r}
+# Create a data frame to store the results
+results <- data.frame(
+  Model = c("OLS", "Random Forest", "Lasso", "GBM"),
+  MSE = c(mse_ols, mse_rf, mse_lasso,mse_gbm),
+  RMSE = c(rmse_ols, rmse_rf, rmse_lasso,rmse_gbm),
+  R_squared = c(r2_ols, r2_rf, r2_lasso,r2_gbm)
+)
+
+# Print the results
+print(results)
+
+# Plot the results
+library(ggplot2)
+
+# MSE Comparison
+ggplot(results, aes(x = Model, y = MSE, fill = Model)) +
+  geom_bar(stat = "identity") +
+  labs(title = "MSE Comparison", x = "Model", y = "Mean Squared Error") +
+  theme_minimal()
+
+# RMSE Comparison
+ggplot(results, aes(x = Model, y = RMSE, fill = Model)) +
+  geom_bar(stat = "identity") +
+  labs(title = "RMSE Comparison", x = "Model", y = "Root Mean Squared Error") +
+  theme_minimal()
+
+# R-squared Comparison
+ggplot(results, aes(x = Model, y = R_squared, fill = Model)) +
+  geom_bar(stat = "identity") +
+  labs(title = "R-squared Comparison", x = "Model", y = "R-squared") +
+  theme_minimal()
+
+```
+
+```{r}
+
+
+# Create a data frame with the results
+results <- data.frame(
+  Model = c("OLS", "Random Forest", "Lasso", "GBM"),
+  MSE = c(3.906942e-03, 6.581323e-05, 7.981396e-05, 5.056160e-05),
+  RMSE = c(0.062505532, 0.008112535, 0.008933866, 0.007110668),
+  R_squared = c(0.9576278, 0.9662536, 0.9590746, 0.9740741)
+)
+
+# Write the data frame to an Excel file
+#write.xlsx(results, "model_comparison.xlsx")
+
+```
+
+Analysis
+1. Mean Squared Error (MSE):
+a. GBM has the lowest MSE (5.056160e-05), indicating the best performance in terms of prediction accuracy.
+b.  Forest follows with an MSE of 6.581323e-05.
+c, Lasso has an MSE of 7.981396e-05.
+d, OLS has the highest MSE (3.906942e-03), indicating the least accurate predictions among the models.
+
+2. Root Mean Squared Error (RMSE):
+a, GBM again has the lowest RMSE (0.007110668), reinforcing its superior performance.
+b, Random Forest has an RMSE of 0.008112535.
+c. Lasso has an RMSE of 0.008933866.
+d, OLS has the highest RMSE (0.062505532).
+
+3. R-squared:
+a. GBM has the highest R-squared (0.9740741), indicating the best fit to the data.
+b. Random Forest follows with an R-squared of 0.9662536.
+c. Lasso has an R-squared of 0.9590746.
+d. OLS has the lowest R-squared (0.9576278).
+
+Recommendation
+Based on the evaluation metrics, the GBM (Gradient Boosting Machine) model performs the best, with the lowest MSE and RMSE and the highest R-squared. Therefore, I recommend using the GBM model for our analysis.
+
+________________________________________________________________________________
+
+```{r}
+
+
+# Combine training and testing data for cross-validation
+data <- rbind(qol_train, qol_test)
+
+# Define cross-validation method
+train_control <- trainControl(method = "cv", number = 10)  # 10-fold cross-validation
+
+# OLS Model
+ols_model <- train(pct_poor_to_fair_health ~ ., data = data, method = "lm", trControl = train_control)
+# Predicted values and residuals for OLS model
+ols_predicted <- predict(ols_model, data)
+ols_residuals <- data$pct_poor_to_fair_health - ols_predicted
+
+# Random Forest Model
+rf_model <- train(pct_poor_to_fair_health ~ ., data = data, method = "rf", trControl = train_control, ntree = 1000)
+# Predicted values and residuals for Random Forest model
+rf_predicted <- predict(rf_model, data)
+rf_residuals <- data$pct_poor_to_fair_health - rf_predicted
+
+# Lasso Model
+lasso_model <- train(pct_poor_to_fair_health ~ ., data = data, method = "glmnet", trControl = train_control, tuneGrid = expand.grid(alpha = 1, lambda = seq(0.001, 0.1, by = 0.001)))
+# Predicted values and residuals for Lasso model
+lasso_predicted <- predict(lasso_model, data)
+lasso_residuals <- data$pct_poor_to_fair_health - lasso_predicted
+
+# GBM Model
+gbm_model <- train(pct_poor_to_fair_health ~ ., data = data, method = "xgbTree", trControl = train_control, tuneGrid = expand.grid(nrounds = 100, max_depth = 6, eta = 0.1, gamma = 0, colsample_bytree = 0.8, min_child_weight = 1, subsample = 0.8))
+# Predicted values and residuals for GBM model
+gbm_predicted <- predict(gbm_model, data)
+gbm_residuals <- data$pct_poor_to_fair_health - gbm_predicted
+
+# Create ggplot objects for each model
+p1 <- ggplot(data, aes(x = ols_predicted, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "OLS: Predicted vs Actual Values", x = "Predicted", y = "Actual")
+
+p2 <- ggplot(data, aes(x = ols_predicted, y = ols_residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "OLS: Residuals vs Predicted Values", x = "Predicted", y = "Residuals")
+
+p3 <- ggplot(data, aes(x = rf_predicted, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Random Forest: Predicted vs Actual Values", x = "Predicted", y = "Actual")
+
+p4 <- ggplot(data, aes(x = rf_predicted, y = rf_residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Random Forest: Residuals vs Predicted Values", x = "Predicted", y = "Residuals")
+
+p5 <- ggplot(data, aes(x = lasso_predicted, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Lasso: Predicted vs Actual Values", x = "Predicted", y = "Actual")
+
+p6 <- ggplot(data, aes(x = lasso_predicted, y = lasso_residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Lasso: Residuals vs Predicted Values", x = "Predicted", y = "Residuals")
+
+p7 <- ggplot(data, aes(x = gbm_predicted, y = pct_poor_to_fair_health)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "GBM: Predicted vs Actual Values", x = "Predicted", y = "Actual")
+
+p8 <- ggplot(data, aes(x = gbm_predicted, y = gbm_residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "GBM: Residuals vs Predicted Values", x = "Predicted", y = "Residuals")
+
+# Combine plots into one
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, ncol = 2)
+
+```
+
+

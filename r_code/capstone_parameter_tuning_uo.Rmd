@@ -224,7 +224,7 @@ calcSplitRatio <- function(p = NA, df) {
 calcSplitRatio(df = qol_data)
 ```
 
-Split data intraining and testing sets, delete nion useful features, input missing values
+Split data intraining and testing sets, delete non useful features, input missing values
 
 ```{r impune missing data values}
 # Find columns with missing data
@@ -371,27 +371,27 @@ table(qol_test$response)
 *Subset regression viability check*
 
 ```{r qol regsubsets selection: su}
-qol_numeric <- qol_data %>% 
-  select(-state,
-         -county,
-         -region,
-         -life_expectancy_years,
-         -fips_code)
+#qol_numeric <- qol_data %>% 
+  #select(-state,
+         #-county,
+         #-region,
+         #-life_expectancy_years,
+         #-fips_code)
 
 # identify best model for response with regsubset, tests for linear models 
-qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
-                             really.big = TRUE,
-                             nvmax = 48)
+#qol_regfit_full <- regsubsets(response ~ ., qol_numeric,
+                             #really.big = TRUE,
+                             #nvmax = 48)
 ```
 
 ```{r identifying ideal # of variables: su}
-reg_fit_summary <- summary(qol_regfit_full)
+#reg_fit_summary <- summary(qol_regfit_full)
 
 # identifying ideal number of variables for each metric
-which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
-which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
-which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
-which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
+#which.min(reg_fit_summary$rss)      # always selects for model with all predictors, over-fits to training data
+#which.max(reg_fit_summary$adjr2)    # increases with additional predictors, susceptible to training error
+#which.min(reg_fit_summary$cp)       # penalizes models with more predictors with unbiased measure of MSE
+#which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) in error so more error introduced with more predictors
 ```
 
 ```{r visualize regsubset data: su}
@@ -399,29 +399,29 @@ which.min(reg_fit_summary$bic)      # like Cp, but includes penalty term log(n) 
 
 par(mfrow = c(2,2))
 
-plot(reg_fit_summary$rss,
-     xlab="Number of Variables",
-     ylab="RSS",
-     type="l")
-points(45, reg_fit_summary$rss[45], col="red",cex=1.5,pch =20)
+#plot(reg_fit_summary$rss,
+     #xlab="Number of Variables",
+     #ylab="RSS",
+     #type="l")
+#points(45, reg_fit_summary$rss[45], col="red",cex=1.5,pch =20)
 
-plot(reg_fit_summary$adjr2,
-     xlab = "Number of Variables",
-     ylab = "Adjusted R-squared",
-     type = "l")
-points(30, reg_fit_summary$adjr2[30], col="red",cex=1.5,pch =20)
+#plot(reg_fit_summary$adjr2,
+     #xlab = "Number of Variables",
+     #ylab = "Adjusted R-squared",
+     #type = "l")
+#points(30, reg_fit_summary$adjr2[30], col="red",cex=1.5,pch =20)
 
-plot(reg_fit_summary$cp,
-     xlab = "Number of Variables",
-     ylab = "Cp",
-     type = "l")
-points(27, reg_fit_summary$cp[27], col="red",cex=1.5,pch =20)
+#plot(reg_fit_summary$cp,
+     #xlab = "Number of Variables",
+     #ylab = "Cp",
+     #type = "l")
+#points(27, reg_fit_summary$cp[27], col="red",cex=1.5,pch =20)
 
-plot(reg_fit_summary$bic,
-     xlab = "Number of Variables",
-     ylab = "BIC",
-     type = "l")
-points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
+#plot(reg_fit_summary$bic,
+     #xlab = "Number of Variables",
+     #ylab = "BIC",
+     #type = "l")
+#points (14, reg_fit_summary$bic[14], col = "red", cex = 1.5, pch = 20)
 
 
 
