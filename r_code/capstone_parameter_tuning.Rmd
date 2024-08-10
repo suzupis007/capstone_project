@@ -814,8 +814,8 @@ qol_data <- qol_data %>%
   mutate(response = ifelse(response == "better", 1, 2)) # convert to 1 and 2 for boxcox analysis, log doesn't work on 0
 ```
 
-```{r boxcox analysis table: su}
-# Initialize the results data frame
+```{r boxcox results table: su}
+# initialize the results data frame
 transform_output <- data.frame(
   Predictor = character(),
   Optimal_Lambda = numeric(),
@@ -829,21 +829,21 @@ transform_output <- data.frame(
 
 *Repeat the following:*
 ```{r bc popl: su}
-# Fit the initial linear model
+# fit the initial linear model
 lm_weighted_pop <- lm(
   response ~ weighted_population,
   qol_data
   )
 summary(lm_weighted_pop)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_weighted_pop)
 
 original_r_squared <- summary(lm_weighted_pop)$r.squared
 original_adj_r_squared <- summary(lm_weighted_pop)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# perform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_cox_weighted_pop <- MASS::boxcox(
   object = lm_weighted_pop
@@ -860,7 +860,7 @@ qol_data <- qol_data %>%
   mutate(transformed_weighted_pop = weighted_population^optimal_lambda)
 
 
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_weighted_pop, qol_data)
 summary(transformed_lm)
 
@@ -870,7 +870,7 @@ transformed_adj_r_squared <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared)
 print(transformed_adj_r_squared)
 
-# Store the results in the results data frame
+# store the results in the results data frame
 results <- rbind(transform_output, data.frame(
   Predictor = "weighted_population",
   Optimal_Lambda = optimal_lambda,
@@ -880,27 +880,27 @@ results <- rbind(transform_output, data.frame(
   Transformed_Adj_R_squared = transformed_adj_r_squared
 ))
 
-# Print the results
+# print the results
 print(results)
 ```
 
 *repeat*
 ```{r bc hh size}
-# Fit the initial linear model
+# fit the initial linear model
 lm_hh_size <- lm(
   response ~ average_hh_size,
   qol_data
   )
 summary(lm_hh_size)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_hh_size)
 
 original_r_squared2 <- summary(lm_hh_size)$r.squared
 original_adj_r_squared2 <- summary(lm_hh_size)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# perform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_cox_hh_size <- MASS::boxcox(
   object = lm_hh_size
@@ -916,7 +916,7 @@ print(optimal_lambda2)
 qol_data <- qol_data %>% 
   mutate(transformed_hh_size = average_hh_size^optimal_lambda2)
 
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_hh_size, qol_data)
 summary(transformed_lm)
 
@@ -926,7 +926,6 @@ transformed_adj_r_squared2 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared2)
 print(transformed_adj_r_squared2)
 
-# Store the results in the results data frame
 # Store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "average_hh_size",
@@ -946,21 +945,21 @@ print(results)
 
 *repeat*
 ```{r bc male}
-# Fit the initial linear model
+# fit the initial linear model
 lm_initial <- lm(
   response ~ pct_male,
   qol_data
   )
 summary(lm_initial)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_initial)
 
 original_r_squared3 <- summary(lm_initial)$r.squared
 original_adj_r_squared3 <- summary(lm_initial)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# perform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_initial_lm <- MASS::boxcox(
   object = lm_initial
@@ -976,7 +975,7 @@ print(optimal_lambda3)
 qol_data <- qol_data %>% 
   mutate(transformed_male = pct_male^optimal_lambda3)
 
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_male, qol_data)
 summary(transformed_lm)
 
@@ -986,7 +985,6 @@ transformed_adj_r_squared3 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared3)
 print(transformed_adj_r_squared3)
 
-# Store the results in the results data frame
 # Store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "pct_male",
@@ -998,7 +996,7 @@ temp_results <- rbind(results, data.frame(
 ))
 
 results <- temp_results
-# Print the results
+# print the results
 print(results)
 
 
@@ -1006,21 +1004,21 @@ print(results)
 
 *repeat*
 ```{r bc computer}
-# Fit the initial linear model
+# fit the initial linear model
 lm_initial <- lm(
   response ~ pct_hh_internet,
   qol_data
   )
 summary(lm_initial)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_initial)
 
 original_r_squared4 <- summary(lm_initial)$r.squared
 original_adj_r_squared4 <- summary(lm_initial)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# perform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_initial_lm <- MASS::boxcox(
   object = lm_initial
@@ -1039,7 +1037,7 @@ qol_data <- qol_data %>%
 
 
 ```{r }
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_internet, qol_data)
 summary(transformed_lm)
 
@@ -1049,7 +1047,6 @@ transformed_adj_r_squared4 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared4)
 print(transformed_adj_r_squared4)
 
-# Store the results in the results data frame
 # Store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "pct_hh_internet",
@@ -1061,7 +1058,8 @@ temp_results <- rbind(results, data.frame(
 ))
 
 results <- temp_results
-# Print the results
+
+# print the results
 print(results)
 
 
@@ -1069,21 +1067,21 @@ print(results)
 
 *repeat*
 ```{r bc employed}
-# Fit the initial linear model
+# fit the initial linear model
 lm_initial <- lm(
   response ~ pct_employed,
   qol_data
   )
 summary(lm_initial)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_initial)
 
 original_r_squared5 <- summary(lm_initial)$r.squared
 original_adj_r_squared5 <- summary(lm_initial)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# perform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_initial_lm <- MASS::boxcox(
   object = lm_initial
@@ -1102,7 +1100,7 @@ qol_data <- qol_data %>%
 
 
 ```{r }
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_employed, qol_data)
 summary(transformed_lm)
 
@@ -1112,7 +1110,6 @@ transformed_adj_r_squared5 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared5)
 print(transformed_adj_r_squared5)
 
-# Store the results in the results data frame
 # Store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "pct_employed",
@@ -1124,7 +1121,8 @@ temp_results <- rbind(results, data.frame(
 ))
 
 results <- temp_results
-# Print the results
+
+# print the results
 print(results)
 
 
@@ -1132,21 +1130,21 @@ print(results)
 
 *repeat*
 ```{r bc obese}
-# Fit the initial linear model
+# fit the initial linear model
 lm_initial <- lm(
   response ~ pct_obese_adults,
   qol_data
   )
 summary(lm_initial)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_initial)
 
 original_r_squared5 <- summary(lm_initial)$r.squared
 original_adj_r_squared5 <- summary(lm_initial)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# perform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_initial_lm <- MASS::boxcox(
   object = lm_initial
@@ -1165,7 +1163,7 @@ qol_data <- qol_data %>%
 
 
 ```{r }
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_obese, qol_data)
 summary(transformed_lm)
 
@@ -1175,8 +1173,7 @@ transformed_adj_r_squared5 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared5)
 print(transformed_adj_r_squared5)
 
-# Store the results in the results data frame
-# Store the results in the results data frame
+# store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "pct_obese_adults",
   Optimal_Lambda = optimal_lambda5,
@@ -1187,7 +1184,7 @@ temp_results <- rbind(results, data.frame(
 ))
 
 results <- temp_results
-# Print the results
+# print the results
 print(results)
 
 
@@ -1197,21 +1194,21 @@ print(results)
 
 *repeat*
 ```{r bc white}
-# Fit the initial linear model
+# fit the initial linear model
 lm_initial <- lm(
   response ~ pct_white,
   qol_data
   )
 summary(lm_initial)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_initial)
 
 original_r_squared6 <- summary(lm_initial)$r.squared
 original_adj_r_squared6 <- summary(lm_initial)$adj.r.squared
 
-# Perform Box-Cox transformation on the response variable
+# rerform Box-Cox transformation on the response variable
 par(mfrow = c(1, 1))
 box_initial_lm <- MASS::boxcox(
   object = lm_initial
@@ -1230,7 +1227,7 @@ qol_data <- qol_data %>%
 
 
 ```{r }
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_white, qol_data)
 summary(transformed_lm)
 par(mfrow = c(2, 2))
@@ -1242,8 +1239,7 @@ transformed_adj_r_squared6 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared6)
 print(transformed_adj_r_squared6)
 
-# Store the results in the results data frame
-# Store the results in the results data frame
+# store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "pct_white",
   Optimal_Lambda = optimal_lambda6,
@@ -1254,7 +1250,8 @@ temp_results <- rbind(results, data.frame(
 ))
 
 results <- temp_results
-# Print the results
+
+# print the results
 print(results)
 
 
@@ -1262,14 +1259,14 @@ print(results)
 
 *repeat*
 ```{r bc adult smokers}
-# Fit the initial linear model
+# fit  initial linear model
 lm_initial <- lm(
   response ~ pct_adult_smokers,
   qol_data
   )
 summary(lm_initial)
 
-# Plot diagnostic plots for the initial model
+# plot diagnostic plots for the initial model
 par(mfrow = c(2, 2))
 plot(lm_initial)
 
@@ -1295,7 +1292,7 @@ qol_data <- qol_data %>%
 
 
 ```{r }
-# Fit a new linear model with the transformed predictor variable
+# fit a new linear model with the transformed predictor variable
 transformed_lm <- lm(response ~ transformed_smokers, qol_data)
 summary(transformed_lm)
 par(mfrow = c(2, 2))
@@ -1307,8 +1304,7 @@ transformed_adj_r_squared7 <- summary(transformed_lm)$adj.r.squared
 print(transformed_r_squared7)
 print(transformed_adj_r_squared7)
 
-# Store the results in the results data frame
-# Store the results in the results data frame
+# store the results in the results data frame
 temp_results <- rbind(results, data.frame(
   Predictor = "pct_adult_smokers",
   Optimal_Lambda = optimal_lambda7,
@@ -1319,7 +1315,8 @@ temp_results <- rbind(results, data.frame(
 ))
 
 results <- temp_results
-# Print the results
+
+# print the results
 print(results)
 
 
@@ -1327,9 +1324,8 @@ print(results)
 
 
 
-```{r}
-# Assuming your data frame is named 'response'
-# Write the data frame to a CSV file
+```{r write response to csv: su}
+# write the boxcox response to a CSV file
 write.csv(results, file = "results.csv", row.names = FALSE)
 
 
