@@ -48,7 +48,8 @@ list_of_packages <- c(
   "pdp",
   "gbm",
   "gtsummary",
-  "gt"
+  "gt",
+  "psych"
   )
 
 new_packages <- list_of_packages[!(
@@ -880,7 +881,7 @@ sqrt(nrow(qol_data))
 
 ```{r clean an removal}
 # clean workspace
-rm(na_counts_df, na_counts)
+#rm(na_counts_df, na_counts)
 ```
 
 *Correlation evaluation*
@@ -924,11 +925,11 @@ print(high_cor_pairs)
 
 ```{r clean qol feature correlation}
 # clean workspace
-rm(
-  qol_numeric,
-  cor_matrix,
-  high_cor_indices
-  )
+#rm(
+#  qol_numeric,
+#  cor_matrix,
+#  high_cor_indices
+#  )
 
 # Remove predictors with large correlation value (|0.7|) or greater with multi-colinearity and low relevance.
 ```
@@ -968,7 +969,7 @@ qol_data <- qol_data %>%
 
 
 ```{r clean correlation removal}
-rm(high_cor_pairs)
+#rm(high_cor_pairs)
 ```
 
 *Near Zero Variance evaluation*
@@ -987,7 +988,7 @@ nzv <- nearZeroVar(qol_numeric, saveMetrics = TRUE)
 
 print(nzv[which(nzv$nzv == TRUE), ])
 
-rm(qol_numeric)
+#rm(qol_numeric)
 ```
 
 ```{r nzr removal}
@@ -998,7 +999,7 @@ qol_data <- qol_data %>%
 
 
 ```{r clean nzr}
-rm(nzv)
+#rm(nzv)
 ```
 
 *Varience Inflation Factor evaluation*
@@ -1069,13 +1070,13 @@ qol_data <- qol_data %>%
 
 
 ```{r clean vif}
-rm(
-  vif_values,
-  high_vif,
-  high_vif_threshold,
-  high_vif_features,
-  vif_df
-)
+#rm(
+#  vif_values,
+#  high_vif,
+#  high_vif_threshold,
+#  high_vif_features,
+#  vif_df
+#)
 ```
 
 *Final feature cleaning and testing*
@@ -1124,7 +1125,7 @@ qol_regfit_full <- leaps::regsubsets(
 reg_fit_summary <- summary(qol_regfit_full)
 ```
 
-```{r identifying ideal # of variables, fig.height=6, fig.width=8}
+```{r identifying ideal # of variables}
 # identifying ideal number of variables
 which.min(reg_fit_summary$rss)
 which.max(reg_fit_summary$adjr2)
@@ -1144,7 +1145,10 @@ min_rss <- which.min(rss)
 max_adjr2 <- which.max(adjr2)
 min_cp <- which.min(cp)
 min_bic <- which.min(bic)
+```
 
+
+```{r identifying ideal # of variables plot}
 par(mfrow = c(2, 2))
 
 # plot RSS
@@ -1221,19 +1225,19 @@ points(
 
 ```{r clean resubset enviroment}
 # clean enviroment
-rm(
-  qol_numeric,
-  qol_regfit_full,
-  reg_fit_summary,
-  adjr2,
-  bic,
-  cp,
-  max_adjr2,
-  min_bic,
-  min_cp,
-  min_rss,
-  rss
-)
+#rm(
+#  qol_numeric,
+#  qol_regfit_full,
+#  reg_fit_summary,
+#  adjr2,
+#  bic,
+#  cp,
+#  max_adjr2,
+#  min_bic,
+#  min_cp,
+#  min_rss,
+#  rss
+#)
 ```
 
 
@@ -1315,10 +1319,10 @@ print(skew_value)
 
 
 ```{r clean normalize response skewness}
-rm(
-  skew_value,
-  response_data
-)
+#rm(
+#  skew_value,
+#  response_data
+#)
 ```
 
 ```{r response boxplot}
@@ -1495,10 +1499,10 @@ ggplot(data = qol_state_median,
 
 
 ```{r clean state median life expectancy}
-rm(
-  qol_state_median,
-  qol_state_mean
-     )
+#rm(
+#  qol_state_median,
+#  qol_state_mean
+#     )
 ```
 
 ```{r top and bottom response in county}
@@ -1512,8 +1516,11 @@ qol_data_sorted <- qol_data %>%
 
 # Select top 10 and bottom 10 counties
 top_bottom_counties <- qol_data_sorted %>%
-  slice(c(1:10, (n() - 9):n()))  # Select first 10 and last 10 rows
+  dplyr::slice(c(1:10, (n() - 9):n()))  # Select first 10 and last 10 rows
+```
 
+
+```{r top and bottom response in county plot}
 # Plotting the bar chart with formatted labels
 ggplot(top_bottom_counties, aes(x = reorder(paste(county, state, sep = ", "), pct_poor_to_fair_health), y = pct_poor_to_fair_health)) +
   geom_bar(stat = "identity") +
@@ -1944,40 +1951,40 @@ summary_table_region
 ```
 
 ```{r EDA clean-up}
-rm(
-  counties,
-  data_mg,
-  data_mg_part1,
-  data_mg_part2,
-  mg_summary_matrix,
-  qol_data_asian,
-  qol_data_black,
-  qol_data_hispanic,
-  qol_data_long,
-  qol_data_na,
-  qol_data_other,
-  qol_data_sorted,
-  qol_data_white,
-  statistic_table,
-  summary_table,
-  summary_table_black,
-  summary_table_white,
-  table_1,
-  summary_table_region,
-  summary_matrix,
-  summary_stats,
-  top_bottom_counties,
-  df_race_list,
-  feature,
-  features,
-  feature_list,
-  i,
-  qol_names,
-  race_vars,
-  variables,
-  mg_sum_stats,
-  race_stats_calc
-)
+#rm(
+#  counties,
+#  data_mg,
+#  data_mg_part1,
+#  data_mg_part2,
+#  mg_summary_matrix,
+#  qol_data_asian,
+#  qol_data_black,
+#  qol_data_hispanic,
+#  qol_data_long,
+#  qol_data_na,
+#  qol_data_other,
+#  qol_data_sorted,
+#  qol_data_white,
+#  statistic_table,
+#  summary_table,
+#  summary_table_black,
+#  summary_table_white,
+#  table_1,
+#  summary_table_region,
+#  summary_matrix,
+#  summary_stats,
+#  top_bottom_counties,
+#  df_race_list,
+#  feature,
+#  features,
+#  feature_list,
+#  i,
+#  qol_names,
+#  race_vars,
+#  variables,
+#  mg_sum_stats,
+#  race_stats_calc
+#)
 ```
 
 
@@ -2378,61 +2385,61 @@ important_vars_list
 *Clean Environment*
 
 ```{r remove all unwanted global objects}
-rm(
-  chr_data,
-  sdoh_data,
-  coefficients,
-  dummies_test,
-  dummies_train,
-  importance_df,
-  importance_rf,
-  model_rf,
-  ols_cv,
-  ols_model,
-  pca_components,
-  pca_model,
-  qol_data,
-  qol_test,
-  qol_test_encoded,
-  qol_train,
-  qol_train_encoded,
-  qol_train_standardized,
-  rf_cv,
-  roc_data,
-  roc_df,
-  roc_obj,
-  roc_ols,
-  top_20_features_ols,
-  top_20_importance,
-  train_control,
-  accuracy,
-  accuracy_ols,
-  auc_rf,
-  confusion_matrix,
-  feature_importance,
-  predicted_classes,
-  predictions,
-  predictions2,
-  split,
-  total_missing,
-  unwanted_chars_results,
-  whitespace_results,
-  unwanted_chars,
-  whitespace_check,
-  features,
-  important_vars,
-  important_vars_df,
-  results_psych,
-  top_features,
-  cumulative_explained_variance,
-  explained_variance,
-  important_vars_list,
-  median_value,
-  num_components_90,
-  num_components_95,
-  calcSplitRatio,
-  qol_lm
-)
+#rm(
+#  chr_data,
+#  sdoh_data,
+#  coefficients,
+#  dummies_test,
+#  dummies_train,
+#  importance_df,
+#  importance_rf,
+#  model_rf,
+#  ols_cv,
+#  ols_model,
+#  pca_components,
+#  pca_model,
+#  qol_data,
+#  qol_test,
+#  qol_test_encoded,
+#  qol_train,
+#  qol_train_encoded,
+#  qol_train_standardized,
+#  rf_cv,
+#  roc_data,
+#  roc_df,
+#  roc_obj,
+#  roc_ols,
+#  top_20_features_ols,
+#  top_20_importance,
+#  train_control,
+#  accuracy,
+#  accuracy_ols,
+#  auc_rf,
+#  confusion_matrix,
+#  feature_importance,
+#  predicted_classes,
+#  predictions,
+#  predictions2,
+#  split,
+#  total_missing,
+#  unwanted_chars_results,
+#  whitespace_results,
+#  unwanted_chars,
+#  whitespace_check,
+#  features,
+#  important_vars,
+#  important_vars_df,
+#  results_psych,
+#  top_features,
+#  cumulative_explained_variance,
+#  explained_variance,
+#  important_vars_list,
+#  median_value,
+#  num_components_90,
+#  num_components_95,
+#  calcSplitRatio,
+#  qol_lm
+#)
 ```
 
 **Upon evaluation of models, it was decided that the model overfit the data, Key features were picked and evaluation was to be done as continuous response with a large feature subset to understand domain causation**
